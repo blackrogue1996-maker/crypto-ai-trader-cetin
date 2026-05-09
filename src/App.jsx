@@ -226,6 +226,7 @@ function TraderProApp() {
   const [authUsername, setAuthUsername] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
+  const [authCode, setAuthCode] = useState("");
   const [demoUsers, setDemoUsers] = useState(() => getStoredUsers());
   const [gmMode, setGmMode] = useState(() => {
     try { return localStorage.getItem("trader_gm_mode") === "1"; } catch { return false; }
@@ -1216,14 +1217,17 @@ const addAlert = (coin, signal) => {
       return;
     }
 
-    const foundUser = demoUsers.find(
-      (user) => user.username === username && user.password === password && user.status !== "blocked"
-    );
+   const foundUser = demoUsers.find(
+  (user) =>
+    user.username === username &&
+    user.password === password &&
+    user.status !== "blocked"
+);
 
-    if (!foundUser) {
-      setAuthMessage("Hatalı kullanıcı adı veya şifre.");
-      return;
-    }
+if (authCode !== "123456") {
+  setAuthMessage("Google kod hatalı.");
+  return;
+}
 
     const normalized = normalizeUser(foundUser);
     setCurrentUser(normalized);
@@ -1736,6 +1740,13 @@ const addAlert = (coin, signal) => {
                     type="password"
                     className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
                   />
+                 <input
+  value={authCode}
+  onChange={(e) => setAuthCode(e.target.value)}
+  placeholder="Google Kod"
+  type="text"
+  className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
+/>
                   {authMessage && (
                     <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm text-cyan-100">
                       {authMessage}
