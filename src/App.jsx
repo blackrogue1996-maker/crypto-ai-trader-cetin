@@ -226,6 +226,8 @@ function TraderProApp() {
   const [authUsername, setAuthUsername] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
+ const [authEmail, setAuthEmail] = useState("");
+const [authEmailConfirm, setAuthEmailConfirm] = useState("");
   const [authCode, setAuthCode] = useState("");
   const [demoUsers, setDemoUsers] = useState(() => getStoredUsers());
   const [gmMode, setGmMode] = useState(() => {
@@ -1741,12 +1743,32 @@ if (authCode !== "123456") {
                     className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
                   />
                  <input
-  value={authCode}
-  onChange={(e) => setAuthCode(e.target.value)}
-  placeholder="Google Kod"
-  type="text"
-  className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
+  <>
+    <input
+      value={authEmail}
+      onChange={(e) => setAuthEmail(e.target.value)}
+      placeholder="E-posta"
+      type="email"
+      className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
+    />
+
+    <input
+      value={authEmailConfirm}
+      onChange={(e) => setAuthEmailConfirm(e.target.value)}
+      placeholder="E-posta tekrar"
+      type="email"
+      className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
+    />
+  </>
+)}
+<input
+value={authCode}
+onChange={(e) => setAuthCode(e.target.value)}
+placeholder="Google Kod"
+type="text"
+className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
 />
+ 
                   {authMessage && (
                     <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm text-cyan-100">
                       {authMessage}
