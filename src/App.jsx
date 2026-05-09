@@ -2807,7 +2807,5 @@ export default function App() {
     <AppErrorBoundary>
       <TraderProApp />
     </AppErrorBoundary>
-  
   );
 }
-// update 2
