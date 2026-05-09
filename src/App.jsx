@@ -1191,6 +1191,20 @@ const addAlert = (coin, signal) => {
     }
 
     if (authMode === "register") {
+     if (!authEmail || !authEmailConfirm) {
+  setAuthMessage("E-posta gir.");
+  return;
+}
+
+if (authEmail !== authEmailConfirm) {
+  setAuthMessage("E-postalar eşleşmiyor.");
+  return;
+}
+
+if (authCode !== "123456") {
+  setAuthMessage("Google kod hatalı.");
+  return;
+}
       const exists = demoUsers.some((user) => user.username.toLowerCase() === username.toLowerCase());
       if (exists) {
         setAuthMessage("Bu kullanıcı zaten kayıtlı. Giriş yapabilirsin.");
