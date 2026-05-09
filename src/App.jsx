@@ -226,9 +226,8 @@ function TraderProApp() {
   const [authUsername, setAuthUsername] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
- const [authEmail, setAuthEmail] = useState("");
-const [authEmailConfirm, setAuthEmailConfirm] = useState("");
-  const [authCode, setAuthCode] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authEmailConfirm, setAuthEmailConfirm] = useState("");
   const [demoUsers, setDemoUsers] = useState(() => getStoredUsers());
   const [gmMode, setGmMode] = useState(() => {
     try { return localStorage.getItem("trader_gm_mode") === "1"; } catch { return false; }
@@ -1184,6 +1183,8 @@ const addAlert = (coin, signal) => {
   const handleAuthDemo = () => {
     const username = authUsername.trim();
     const password = authPassword.trim();
+    const email = authEmail.trim();
+    const emailConfirm = authEmailConfirm.trim();
 
     if (!username || !password) {
       setAuthMessage("Kullanıcı adı ve şifre gir.");
@@ -1191,21 +1192,20 @@ const addAlert = (coin, signal) => {
     }
 
     if (authMode === "register") {
-     if (!authEmail || !authEmailConfirm) {
-  setAuthMessage("E-posta gir.");
-  return;
-}
+      if (!email || !emailConfirm) {
+        setAuthMessage("E-posta gir.");
+        return;
+      }
 
-if (authEmail !== authEmailConfirm) {
-  setAuthMessage("E-postalar eşleşmiyor.");
-  return;
-}
+      if (email.toLowerCase() !== emailConfirm.toLowerCase()) {
+        setAuthMessage("E-postalar eşleşmiyor.");
+        return;
+      }
 
-if (authCode !== "123456") {
-  setAuthMessage("Google kod hatalı.");
-  return;
-}
-      const exists = demoUsers.some((user) => user.username.toLowerCase() === username.toLowerCase());
+      const exists = demoUsers.some(
+        (user) => String(user.username).toLowerCase() === username.toLowerCase()
+      );
+
       if (exists) {
         setAuthMessage("Bu kullanıcı zaten kayıtlı. Giriş yapabilirsin.");
         return;
@@ -1215,39 +1215,49 @@ if (authCode !== "123456") {
         username,
         password,
         name: username,
-        email: `${username}@traderpro.com`,
+        email,
         role: "user",
         package: "SERBEST",
         expiresAt: null,
       });
+
       setDemoUsers((prev) => [...prev, newUser]);
       setCurrentUser(newUser);
       setGmMode(false);
+
       try {
         localStorage.setItem("trader_current_user", JSON.stringify(newUser));
         localStorage.removeItem("trader_gm_mode");
       } catch {}
+
       setActiveSubscription({ plan: "SERBEST", purchasedAt: null, expiresAt: null });
       setPlan("SERBEST");
+      setAuthUsername("");
+      setAuthPassword("");
+      setAuthEmail("");
+      setAuthEmailConfirm("");
       setAuthMessage("Kayıt başarılı, giriş yapıldı.");
       return;
     }
 
-   const foundUser = demoUsers.find(
-  (user) =>
-    user.username === username &&
-    user.password === password &&
-    user.status !== "blocked"
-);
+    const foundUser = demoUsers.find(
+      (user) =>
+        String(user.username) === username &&
+        String(user.password) === password &&
+        user.status !== "blocked"
+    );
 
-if (authCode !== "123456") {
-  setAuthMessage("Google kod hatalı.");
-  return;
-}
+    if (!foundUser) {
+      setAuthMessage("Hatalı kullanıcı adı veya şifre.");
+      return;
+    }
 
     const normalized = normalizeUser(foundUser);
     setCurrentUser(normalized);
-    try { localStorage.setItem("trader_current_user", JSON.stringify(normalized)); } catch {}
+
+    try {
+      localStorage.setItem("trader_current_user", JSON.stringify(normalized));
+    } catch {}
 
     if (String(normalized.role).toUpperCase() === "GM") {
       setGmMode(true);
@@ -1756,27 +1766,27 @@ if (authCode !== "123456") {
                     type="password"
                     className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
                   />
-                 <input
-  <>
-    <input
-      value={authEmail}
-      onChange={(e) => setAuthEmail(e.target.value)}
-      placeholder="E-posta"
-      type="email"
-      className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
-    />
 
-    <input
-      value={authEmailConfirm}
-      onChange={(e) => setAuthEmailConfirm(e.target.value)}
-      placeholder="E-posta tekrar"
-      type="email"
-      className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none"
-    />
-  </>
-)}
+                  {authMode === "register" && (
+                    <>
+                      <input
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        placeholder="E-posta"
+                        type="email"
+                        className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
+                      />
 
- 
+                      <input
+                        value={authEmailConfirm}
+                        onChange={(e) => setAuthEmailConfirm(e.target.value)}
+                        placeholder="E-posta tekrar"
+                        type="email"
+                        className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
+                      />
+                    </>
+                  )}
+
                   {authMessage && (
                     <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm text-cyan-100">
                       {authMessage}
