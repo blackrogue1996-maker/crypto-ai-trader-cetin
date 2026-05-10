@@ -631,36 +631,70 @@ function TraderProApp() {
     const newsSentiment = newsPulseRaw >= 1.2 ? "POZİTİF" : newsPulseRaw <= -1.2 ? "NEGATİF" : "NÖTR";
     const whaleFlow = Math.round(Math.min(95, Math.max(5, volumeRatio * 28 + Math.abs(trendSlopePct) * 5)));
 
+    const bullishPressure = Math.max(0, moneyIn - moneyOut);
+    const bearishPressure = Math.max(0, moneyOut - moneyIn);
+    const cleanLongSetup = emaBull && macdBull && trendUp && moneyIn >= 60 && !rsiHot && !volumeWeak;
+    const cleanShortSetup = emaBear && macdBear && trendDown && moneyOut >= 60 && !volumeWeak;
+    const breakoutQuality = resistanceBreak && volumeBoost && moneyIn >= 60;
+    const breakdownQuality = supportBreak && volumeBoost && moneyOut >= 60;
+
     let score = 50;
-    if (rsiBull) score += 11;
-    if (rsiHot) score -= 13;
+    // Ultra onaylı skor: tek indikatör yetmez, trend + momentum + hacim + para akışı birlikte ağırlık kazanır.
+    if (rsiBull) score += 8;
+    if (rsi >= 55 && rsi <= 64 && trendUp) score += 6;
+    if (rsiHot) score -= 18;
     if (rsiBear) score -= 10;
-    if (emaBull) score += 18;
-    if (emaBear) score -= 18;
-    if (macdBull) score += 16;
-    if (macdBear) score -= 16;
-    if (macdInfo.crossedUp) score += 9;
-    if (macdInfo.crossedDown) score -= 12;
-    if (trendUp) score += 15;
-    if (trendDown) score -= 15;
-    if (resistanceBreak && volumeBoost) score += 18;
-    if (resistanceBreak && !volumeBoost) score += 6;
-    if (supportBreak) score -= 18;
-    if (nearResistance && !resistanceBreak) score -= 6;
-    if (nearSupport && !supportBreak) score += 4;
-    if (volumeBoost) score += 8;
-    if (volumeWeak) score -= 10;
-    if (moneyIn >= 62) score += 9;
-    if (moneyOut >= 62) score -= 9;
-    if (newsSentiment === "POZİTİF") score += 5;
-    if (newsSentiment === "NEGATİF") score -= 5;
+    if (emaBull) score += 20;
+    if (emaBear) score -= 20;
+    if (macdBull) score += 18;
+    if (macdBear) score -= 18;
+    if (macdInfo.crossedUp && volumeBoost) score += 12;
+    if (macdInfo.crossedDown && volumeBoost) score -= 14;
+    if (trendUp) score += 18;
+    if (trendDown) score -= 18;
+    if (breakoutQuality) score += 22;
+    else if (resistanceBreak) score += 5;
+    if (breakdownQuality) score -= 22;
+    else if (supportBreak) score -= 16;
+    if (nearResistance && !breakoutQuality) score -= 10;
+    if (nearSupport && !breakdownQuality) score += 6;
+    if (volumeBoost) score += 10;
+    if (volumeWeak) score -= 16;
+    if (moneyIn >= 68) score += 14;
+    else if (moneyIn >= 60) score += 8;
+    if (moneyOut >= 68) score -= 14;
+    else if (moneyOut >= 60) score -= 8;
+    if (bullishPressure >= 30 && volumeBoost) score += 8;
+    if (bearishPressure >= 30 && volumeBoost) score -= 8;
+    if (newsSentiment === "POZİTİF") score += 6;
+    if (newsSentiment === "NEGATİF") score -= 7;
+    if (cleanLongSetup) score += 10;
+    if (cleanShortSetup) score -= 10;
 
     score = Math.max(0, Math.min(100, Math.round(score)));
 
-    const confirmations = [rsiBull, emaBull, macdBull, trendUp, volumeBoost, moneyIn >= 58, newsSentiment !== "NEGATİF"]
-      .filter(Boolean).length;
-    const sellConfirmations = [rsiBear, emaBear, macdBear, trendDown, supportBreak, moneyOut >= 58, newsSentiment === "NEGATİF"]
-      .filter(Boolean).length;
+    const confirmations = [
+      rsiBull || (rsi >= 52 && rsi <= 66),
+      emaBull,
+      macdBull,
+      trendUp,
+      volumeBoost,
+      moneyIn >= 60,
+      newsSentiment !== "NEGATİF",
+      !nearResistance || breakoutQuality,
+      !volumeWeak,
+    ].filter(Boolean).length;
+    const sellConfirmations = [
+      rsiBear || rsi < 45,
+      emaBear,
+      macdBear,
+      trendDown,
+      volumeBoost || supportBreak,
+      moneyOut >= 60,
+      newsSentiment !== "POZİTİF",
+      !nearSupport || breakdownQuality,
+      !volumeWeak,
+    ].filter(Boolean).length;
 
     let text = "BEKLE";
     let type = "İZLE";
@@ -669,35 +703,35 @@ function TraderProApp() {
     let probability = Math.max(45, Math.min(72, score));
     let safety = "ORTA";
 
-    // Güvenli mod: AL/SAT için tek gösterge yetmez, en az 5 onay ister.
-    if (score >= 82 && confirmations >= 5 && !rsiHot && !volumeWeak) {
+    // Ultra güvenli mod: sinyal az çıkar ama onay kalitesi yüksek olur.
+    if (score >= 86 && confirmations >= 7 && cleanLongSetup) {
       text = "GÜÇLÜ AL";
       type = "SPOT";
       color = "text-emerald-300 bg-emerald-500/20";
       icon = TrendingUp;
-      probability = Math.min(94, score + confirmations);
-      safety = "YÜKSEK";
-    } else if (score >= 70 && confirmations >= 4 && !rsiHot) {
+      probability = Math.min(96, score + confirmations);
+      safety = "ULTRA ONAY";
+    } else if (score >= 72 && confirmations >= 5) {
       text = "BEKLE";
       type = "İZLE";
       color = "text-yellow-300 bg-yellow-500/20";
       icon = Target;
-      probability = Math.min(78, score);
-      safety = "ONAY BEKLİYOR";
-    } else if (score <= 22 && sellConfirmations >= 5) {
+      probability = Math.min(82, score);
+      safety = "ONAY TOPLUYOR";
+    } else if (score <= 14 && sellConfirmations >= 7 && cleanShortSetup) {
       text = "GÜÇLÜ SAT";
       type = "KISA";
       color = "text-red-300 bg-red-500/20";
       icon = TrendingDown;
-      probability = Math.min(94, 100 - score + sellConfirmations);
-      safety = "YÜKSEK";
-    } else if (score <= 35 && sellConfirmations >= 4) {
+      probability = Math.min(96, 100 - score + sellConfirmations);
+      safety = "ULTRA ONAY";
+    } else if (score <= 30 && sellConfirmations >= 5) {
       text = "BEKLE";
       type = "İZLE";
       color = "text-yellow-300 bg-yellow-500/20";
       icon = Target;
-      probability = Math.min(78, 100 - score);
-      safety = "ONAY BEKLİYOR";
+      probability = Math.min(82, 100 - score);
+      safety = "ONAY TOPLUYOR";
     }
 
     return {
@@ -782,28 +816,34 @@ function TraderProApp() {
     const newsSentiment = change > 1.5 ? "POZİTİF" : change < -1.5 ? "NEGATİF" : "NÖTR";
     const traderBias = moneyIn >= 58 ? "ALICI YOĞUN" : moneyOut >= 58 ? "SATICI YOĞUN" : "DENGELİ";
 
+    const fallbackLongSetup = price > ema && macd > 0 && trendUp && moneyIn >= 62 && volumeScore >= 1 && rsi <= 70;
+    const fallbackShortSetup = price < ema && macd < 0 && trendDown && moneyOut >= 62;
     let score = 50;
-    if (rsi >= 48 && rsi <= 66) score += 10;
-    if (rsi > 70) score -= 12;
-    if (rsi < 38) score -= 8;
-    if (price > ema) score += 13;
-    if (price < ema) score -= 13;
-    if (macd > 0) score += 12;
-    if (macd < 0) score -= 12;
-    if (trendUp) score += 14;
-    if (trendDown) score -= 14;
-    if (resistanceBreak && volumeScore >= 1) score += 12;
-    if (supportBreak) score -= 15;
-    if (moneyIn >= 62) score += 8;
-    if (moneyOut >= 62) score -= 8;
-    if (volumeScore === 2) score += 8;
-    if (volumeScore === -1) score -= 8;
-    if (newsSentiment === "POZİTİF") score += 5;
-    if (newsSentiment === "NEGATİF") score -= 5;
+    if (rsi >= 50 && rsi <= 64) score += 8;
+    if (rsi > 70) score -= 18;
+    if (rsi < 38) score -= 10;
+    if (price > ema) score += 16;
+    if (price < ema) score -= 16;
+    if (macd > 0) score += 15;
+    if (macd < 0) score -= 15;
+    if (trendUp) score += 18;
+    if (trendDown) score -= 18;
+    if (resistanceBreak && volumeScore >= 1 && moneyIn >= 60) score += 18;
+    if (supportBreak && moneyOut >= 60) score -= 18;
+    if (moneyIn >= 68) score += 12;
+    else if (moneyIn >= 60) score += 7;
+    if (moneyOut >= 68) score -= 12;
+    else if (moneyOut >= 60) score -= 7;
+    if (volumeScore === 2) score += 10;
+    if (volumeScore === -1) score -= 14;
+    if (newsSentiment === "POZİTİF") score += 6;
+    if (newsSentiment === "NEGATİF") score -= 7;
+    if (fallbackLongSetup) score += 10;
+    if (fallbackShortSetup) score -= 10;
     score = Math.max(0, Math.min(100, Math.round(score)));
 
-    const confirmations = [rsi >= 48 && rsi <= 66, price > ema, macd > 0, trendUp, volumeScore >= 1, moneyIn >= 58, newsSentiment !== "NEGATİF"].filter(Boolean).length;
-    const sellConfirmations = [rsi < 42, price < ema, macd < 0, trendDown, supportBreak, moneyOut >= 58, newsSentiment === "NEGATİF"].filter(Boolean).length;
+    const confirmations = [rsi >= 50 && rsi <= 66, price > ema, macd > 0, trendUp, volumeScore >= 1, moneyIn >= 60, newsSentiment !== "NEGATİF"].filter(Boolean).length;
+    const sellConfirmations = [rsi < 42, price < ema, macd < 0, trendDown, supportBreak || volumeScore >= 1, moneyOut >= 60, newsSentiment !== "POZİTİF"].filter(Boolean).length;
 
     let text = "BEKLE";
     let type = "İZLE";
@@ -812,34 +852,34 @@ function TraderProApp() {
     let probability = Math.max(45, Math.min(72, score));
     let safety = "ORTA";
 
-    if (score >= 82 && confirmations >= 5 && rsi <= 70) {
+    if (score >= 86 && confirmations >= 6 && fallbackLongSetup) {
       text = "GÜÇLÜ AL";
       type = "SPOT";
       color = "text-emerald-300 bg-emerald-500/20";
       icon = TrendingUp;
-      probability = Math.min(94, score + confirmations);
-      safety = "YÜKSEK";
-    } else if (score >= 70 && confirmations >= 4 && rsi <= 70) {
+      probability = Math.min(96, score + confirmations);
+      safety = "ULTRA ONAY";
+    } else if (score >= 72 && confirmations >= 5 && rsi <= 70) {
       text = "BEKLE";
       type = "İZLE";
       color = "text-yellow-300 bg-yellow-500/20";
       icon = Target;
-      probability = Math.min(78, score);
-      safety = "ONAY BEKLİYOR";
-    } else if (score <= 22 && sellConfirmations >= 5) {
+      probability = Math.min(82, score);
+      safety = "ONAY TOPLUYOR";
+    } else if (score <= 14 && sellConfirmations >= 6 && fallbackShortSetup) {
       text = "GÜÇLÜ SAT";
       type = "KISA";
       color = "text-red-300 bg-red-500/20";
       icon = TrendingDown;
-      probability = Math.min(94, 100 - score + sellConfirmations);
-      safety = "YÜKSEK";
-    } else if (score <= 35 && sellConfirmations >= 4) {
+      probability = Math.min(96, 100 - score + sellConfirmations);
+      safety = "ULTRA ONAY";
+    } else if (score <= 30 && sellConfirmations >= 5) {
       text = "BEKLE";
       type = "İZLE";
       color = "text-yellow-300 bg-yellow-500/20";
       icon = Target;
-      probability = Math.min(78, 100 - score);
-      safety = "ONAY BEKLİYOR";
+      probability = Math.min(82, 100 - score);
+      safety = "ONAY TOPLUYOR";
     }
 
     return {
@@ -878,26 +918,26 @@ function TraderProApp() {
     if (!signal || price <= 0) return null;
 
     const probability = safeNumber(signal.probability || signal.score, 60);
-    const tight = probability >= 85 ? 1 : probability >= 75 ? 0.85 : 0.7;
+    const tight = probability >= 88 ? 1 : probability >= 78 ? 0.82 : 0.65;
 
-    // Kısa TP modu: kullanıcı hızlı çıkış görebilsin diye hedefler yakın tutuldu.
+    // Ultra kısa TP modu: güçlü sinyalde bile hedefler daha yakın, stop daha kontrollü.
     if (signal.type === "SPOT") {
       return {
         entry: price,
-        tp1: price * (1 + 0.006 * tight),
-        tp2: price * (1 + 0.012 * tight),
-        tp3: price * (1 + 0.018 * tight),
-        sl: price * (1 - 0.0075 * tight),
+        tp1: price * (1 + 0.0045 * tight),
+        tp2: price * (1 + 0.009 * tight),
+        tp3: price * (1 + 0.0135 * tight),
+        sl: price * (1 - 0.0065 * tight),
       };
     }
 
     if (signal.type === "KISA") {
       return {
         entry: price,
-        tp1: price * (1 - 0.006 * tight),
-        tp2: price * (1 - 0.012 * tight),
-        tp3: price * (1 - 0.018 * tight),
-        sl: price * (1 + 0.0075 * tight),
+        tp1: price * (1 - 0.0045 * tight),
+        tp2: price * (1 - 0.009 * tight),
+        tp3: price * (1 - 0.0135 * tight),
+        sl: price * (1 + 0.0065 * tight),
       };
     }
 
