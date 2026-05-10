@@ -576,86 +576,128 @@ function TraderProApp() {
           .filter((c) => c.price > 0 && c.high > 0 && c.low > 0 && Number.isFinite(c.volume))
       : [];
 
+    if (clean.length < 35) return null;
+
     const closes = clean.map((c) => c.price);
     const highs = clean.map((c) => c.high);
     const lows = clean.map((c) => c.low);
     const volumes = clean.map((c) => c.volume);
 
-    if (clean.length < 35) {
-      const price = safeNumber(fallbackCoin?.lastPrice);
-      const change = safeNumber(fallbackCoin?.priceChangePercent);
-      const volume = safeNumber(fallbackCoin?.quoteVolume);
-      return null;
-    }
-
     const lastClose = closes[closes.length - 1];
     const prevClose = closes[closes.length - 2] || lastClose;
-    const rsi = calculateRSIValue(closes.slice(-40), 14);
-    const ema20 = calculateEMAValue(closes.slice(-60), 20);
-    const ema50 = calculateEMAValue(closes.slice(-80), 50);
-    const macdInfo = calculateMACDValues(closes.slice(-80));
+    const rsi = calculateRSIValue(closes.slice(-60), 14);
+    const ema9 = calculateEMAValue(closes.slice(-50), 9);
+    const ema20 = calculateEMAValue(closes.slice(-70), 20);
+    const ema50 = calculateEMAValue(closes.slice(-100), 50);
+    const macdInfo = calculateMACDValues(closes.slice(-100));
 
-    const lookback = clean.slice(-30, -1);
+    const lookback = clean.slice(-36, -1);
     const resistance = Math.max(...lookback.map((c) => c.high));
     const support = Math.min(...lookback.map((c) => c.low));
-    const avgVolume = volumes.slice(-30, -1).reduce((a, b) => a + b, 0) / Math.max(1, volumes.slice(-30, -1).length);
+    const avgVolume = volumes.slice(-36, -1).reduce((a, b) => a + b, 0) / Math.max(1, volumes.slice(-36, -1).length);
     const lastVolume = volumes[volumes.length - 1] || 0;
-    const volumeBoost = avgVolume > 0 && lastVolume > avgVolume * 1.15;
+    const volumeRatio = avgVolume > 0 ? lastVolume / avgVolume : 1;
+    const volumeBoost = volumeRatio >= 1.18;
+    const volumeWeak = volumeRatio < 0.72;
 
-    const recent = clean.slice(-20);
-    const firstLow = recent[0]?.low || support;
-    const lastLow = recent[recent.length - 1]?.low || support;
-    const trendSlope = (lastLow - firstLow) / Math.max(1, recent.length - 1);
-    const trendUp = trendSlope > 0;
-    const trendDown = trendSlope < 0;
+    const recent = clean.slice(-24);
+    const firstClose = recent[0]?.price || lastClose;
+    const lastRecentClose = recent[recent.length - 1]?.price || lastClose;
+    const trendSlopePct = firstClose > 0 ? ((lastRecentClose - firstClose) / firstClose) * 100 : 0;
+    const trendUp = trendSlopePct > 0.25 && ema9 >= ema20 && ema20 >= ema50;
+    const trendDown = trendSlopePct < -0.25 && ema9 <= ema20 && ema20 <= ema50;
 
-    const resistanceBreak = lastClose > resistance && prevClose <= resistance;
-    const supportBreak = lastClose < support && prevClose >= support;
-    const emaBull = lastClose > ema20 && ema20 >= ema50;
-    const emaBear = lastClose < ema20 && ema20 <= ema50;
+    const resistanceBreak = lastClose > resistance * 1.001 && prevClose <= resistance;
+    const supportBreak = lastClose < support * 0.999 && prevClose >= support;
+    const nearResistance = resistance > 0 ? (resistance - lastClose) / resistance < 0.006 : false;
+    const nearSupport = support > 0 ? (lastClose - support) / support < 0.006 : false;
+
+    const emaBull = lastClose > ema9 && ema9 >= ema20 && ema20 >= ema50;
+    const emaBear = lastClose < ema9 && ema9 <= ema20 && ema20 <= ema50;
     const macdBull = macdInfo.macd > macdInfo.signalLine && macdInfo.histogram > 0;
     const macdBear = macdInfo.macd < macdInfo.signalLine && macdInfo.histogram < 0;
-    const rsiBull = rsi >= 45 && rsi <= 72;
-    const rsiBear = rsi <= 45;
+    const rsiBull = rsi >= 48 && rsi <= 66;
+    const rsiHot = rsi > 70;
+    const rsiBear = rsi <= 42;
+
+    const greenVolume = recent.filter((c, i) => i > 0 && c.price >= recent[i - 1].price).reduce((a, c) => a + c.volume, 0);
+    const redVolume = recent.filter((c, i) => i > 0 && c.price < recent[i - 1].price).reduce((a, c) => a + c.volume, 0);
+    const totalDirectionalVolume = Math.max(1, greenVolume + redVolume);
+    const moneyIn = Math.round((greenVolume / totalDirectionalVolume) * 100);
+    const moneyOut = Math.max(0, 100 - moneyIn);
+    const traderBias = moneyIn >= 58 ? "ALICI YOĞUN" : moneyOut >= 58 ? "SATICI YOĞUN" : "DENGELİ";
+
+    const newsPulseRaw = safeNumber(fallbackCoin?.priceChangePercent) + (volumeRatio - 1) * 2 + trendSlopePct / 3;
+    const newsSentiment = newsPulseRaw >= 1.2 ? "POZİTİF" : newsPulseRaw <= -1.2 ? "NEGATİF" : "NÖTR";
+    const whaleFlow = Math.round(Math.min(95, Math.max(5, volumeRatio * 28 + Math.abs(trendSlopePct) * 5)));
 
     let score = 50;
-    if (rsiBull) score += 10;
-    if (rsi > 72) score -= 8;
-    if (rsiBear) score -= 8;
-    if (emaBull) score += 15;
-    if (emaBear) score -= 15;
-    if (macdBull) score += 15;
-    if (macdBear) score -= 15;
-    if (macdInfo.crossedUp) score += 10;
-    if (macdInfo.crossedDown) score -= 10;
-    if (trendUp) score += 10;
-    if (trendDown) score -= 8;
-    if (resistanceBreak) score += 15;
-    if (supportBreak) score -= 15;
-    if (volumeBoost) score += 10;
+    if (rsiBull) score += 11;
+    if (rsiHot) score -= 13;
+    if (rsiBear) score -= 10;
+    if (emaBull) score += 18;
+    if (emaBear) score -= 18;
+    if (macdBull) score += 16;
+    if (macdBear) score -= 16;
+    if (macdInfo.crossedUp) score += 9;
+    if (macdInfo.crossedDown) score -= 12;
+    if (trendUp) score += 15;
+    if (trendDown) score -= 15;
+    if (resistanceBreak && volumeBoost) score += 18;
+    if (resistanceBreak && !volumeBoost) score += 6;
+    if (supportBreak) score -= 18;
+    if (nearResistance && !resistanceBreak) score -= 6;
+    if (nearSupport && !supportBreak) score += 4;
+    if (volumeBoost) score += 8;
+    if (volumeWeak) score -= 10;
+    if (moneyIn >= 62) score += 9;
+    if (moneyOut >= 62) score -= 9;
+    if (newsSentiment === "POZİTİF") score += 5;
+    if (newsSentiment === "NEGATİF") score -= 5;
 
     score = Math.max(0, Math.min(100, Math.round(score)));
 
+    const confirmations = [rsiBull, emaBull, macdBull, trendUp, volumeBoost, moneyIn >= 58, newsSentiment !== "NEGATİF"]
+      .filter(Boolean).length;
+    const sellConfirmations = [rsiBear, emaBear, macdBear, trendDown, supportBreak, moneyOut >= 58, newsSentiment === "NEGATİF"]
+      .filter(Boolean).length;
+
     let text = "BEKLE";
     let type = "İZLE";
-    let color = "text-yellow-400 bg-yellow-500/20";
+    let color = "text-yellow-300 bg-yellow-500/20";
     let icon = Target;
+    let probability = Math.max(45, Math.min(72, score));
+    let safety = "ORTA";
 
-    if (score >= 80) {
-      text = "GÜÇLÜ AL";
+    // Güvenli mod: AL/SAT için tek gösterge yetmez, en az 5 onay ister.
+    if (score >= 82 && confirmations >= 5 && !rsiHot && !volumeWeak) {
+      text = "GÜVENLİ AL";
       type = "SPOT";
-      color = "text-green-400 bg-green-500/20";
+      color = "text-emerald-300 bg-emerald-500/20";
       icon = TrendingUp;
-    } else if (score >= 60) {
-      text = "AL";
+      probability = Math.min(94, score + confirmations);
+      safety = "YÜKSEK";
+    } else if (score >= 70 && confirmations >= 4 && !rsiHot) {
+      text = "AL / ONAY BEKLE";
       type = "SPOT";
-      color = "text-emerald-400 bg-emerald-500/20";
+      color = "text-cyan-300 bg-cyan-500/20";
       icon = TrendingUp;
-    } else if (score < 40) {
-      text = supportBreak || score < 25 ? "SAT / RİSKLİ" : "SAT";
+      probability = Math.min(84, score);
+      safety = "ORTA+";
+    } else if (score <= 22 && sellConfirmations >= 5) {
+      text = "GÜVENLİ SAT";
       type = "KISA";
-      color = "text-red-400 bg-red-500/20";
+      color = "text-red-300 bg-red-500/20";
       icon = TrendingDown;
+      probability = Math.min(94, 100 - score + sellConfirmations);
+      safety = "YÜKSEK";
+    } else if (score <= 35 && sellConfirmations >= 4) {
+      text = "SAT / ONAY BEKLE";
+      type = "KISA";
+      color = "text-orange-300 bg-orange-500/20";
+      icon = TrendingDown;
+      probability = Math.min(84, 100 - score);
+      safety = "ORTA+";
     }
 
     return {
@@ -664,8 +706,12 @@ function TraderProApp() {
       color,
       icon,
       score,
+      probability,
+      safety,
+      confirmations,
       rsi: Math.round(rsi),
       ema: ema20,
+      ema9,
       ema20,
       ema50,
       macd: macdInfo.macd,
@@ -674,10 +720,17 @@ function TraderProApp() {
       support,
       resistance,
       volumeBoost,
+      volumeRatio,
       trendUp,
       trendDown,
+      trendSlopePct,
       resistanceBreak,
       supportBreak,
+      moneyIn,
+      moneyOut,
+      traderBias,
+      newsSentiment,
+      whaleFlow,
       analyzedAt: new Date().toISOString(),
     };
   };
@@ -712,114 +765,111 @@ function TraderProApp() {
 
     const high = safeNumber(coin?.highPrice, price);
     const low = safeNumber(coin?.lowPrice, price);
-
     const range = high - low;
     const position = range > 0 ? ((price - low) / range) * 100 : 50;
-
     const rsi = calculateRSI(change);
     const ema = calculateEMA(price, change);
     const macd = calculateMACD(change);
+    const volumeScore = volume > 500000000 ? 2 : volume > 100000000 ? 1 : volume < 10000000 ? -1 : 0;
+    const moneyIn = Math.round(Math.min(90, Math.max(10, 50 + change * 5 + volumeScore * 6)));
+    const moneyOut = 100 - moneyIn;
+    const trendUp = change > 0.6 && price >= ema;
+    const trendDown = change < -0.6 && price < ema;
+    const resistance = high;
+    const support = low;
+    const resistanceBreak = price > high * 0.998 && change > 0.8;
+    const supportBreak = price < low * 1.002 && change < -0.8;
+    const newsSentiment = change > 1.5 ? "POZİTİF" : change < -1.5 ? "NEGATİF" : "NÖTR";
+    const traderBias = moneyIn >= 58 ? "ALICI YOĞUN" : moneyOut >= 58 ? "SATICI YOĞUN" : "DENGELİ";
 
     let score = 50;
-    let risk = 0;
+    if (rsi >= 48 && rsi <= 66) score += 10;
+    if (rsi > 70) score -= 12;
+    if (rsi < 38) score -= 8;
+    if (price > ema) score += 13;
+    if (price < ema) score -= 13;
+    if (macd > 0) score += 12;
+    if (macd < 0) score -= 12;
+    if (trendUp) score += 14;
+    if (trendDown) score -= 14;
+    if (resistanceBreak && volumeScore >= 1) score += 12;
+    if (supportBreak) score -= 15;
+    if (moneyIn >= 62) score += 8;
+    if (moneyOut >= 62) score -= 8;
+    if (volumeScore === 2) score += 8;
+    if (volumeScore === -1) score -= 8;
+    if (newsSentiment === "POZİTİF") score += 5;
+    if (newsSentiment === "NEGATİF") score -= 5;
+    score = Math.max(0, Math.min(100, Math.round(score)));
 
-    if (rsi > 70 || rsi < 30) risk += 2;
-    if (rsi > 80 || rsi < 20) risk += 2;
-    if (macd < 0) risk += 2;
-    if (price < ema) risk += 2;
-    if (volume < 10000000) risk += 2;
+    const confirmations = [rsi >= 48 && rsi <= 66, price > ema, macd > 0, trendUp, volumeScore >= 1, moneyIn >= 58, newsSentiment !== "NEGATİF"].filter(Boolean).length;
+    const sellConfirmations = [rsi < 42, price < ema, macd < 0, trendDown, supportBreak, moneyOut >= 58, newsSentiment === "NEGATİF"].filter(Boolean).length;
 
-    if (risk >= 6) {
-      return {
-        text: "BEKLE",
-        type: "BEKLE",
-        color: "text-yellow-400 bg-yellow-500/20",
-        icon: Target,
-        score: 0,
-        rsi,
-        ema,
-        macd,
-      };
+    let text = "BEKLE";
+    let type = "İZLE";
+    let color = "text-yellow-300 bg-yellow-500/20";
+    let icon = Target;
+    let probability = Math.max(45, Math.min(72, score));
+    let safety = "ORTA";
+
+    if (score >= 82 && confirmations >= 5 && rsi <= 70) {
+      text = "GÜVENLİ AL";
+      type = "SPOT";
+      color = "text-emerald-300 bg-emerald-500/20";
+      icon = TrendingUp;
+      probability = Math.min(94, score + confirmations);
+      safety = "YÜKSEK";
+    } else if (score >= 70 && confirmations >= 4 && rsi <= 70) {
+      text = "AL / ONAY BEKLE";
+      type = "SPOT";
+      color = "text-cyan-300 bg-cyan-500/20";
+      icon = TrendingUp;
+      probability = Math.min(84, score);
+      safety = "ORTA+";
+    } else if (score <= 22 && sellConfirmations >= 5) {
+      text = "GÜVENLİ SAT";
+      type = "KISA";
+      color = "text-red-300 bg-red-500/20";
+      icon = TrendingDown;
+      probability = Math.min(94, 100 - score + sellConfirmations);
+      safety = "YÜKSEK";
+    } else if (score <= 35 && sellConfirmations >= 4) {
+      text = "SAT / ONAY BEKLE";
+      type = "KISA";
+      color = "text-orange-300 bg-orange-500/20";
+      icon = TrendingDown;
+      probability = Math.min(84, 100 - score);
+      safety = "ORTA+";
     }
 
-    if (change > 1) score += 15;
-    if (change > 3) score += 10;
-    if (change < -1) score -= 15;
-    if (change < -3) score -= 10;
-
-    if (position < 30 && change > 0) score += 15;
-    if (position > 80 && change > 0) score -= 10;
-    if (position > 70 && change < 0) score -= 15;
-    if (position < 20 && change < 0) score += 5;
-
-    if (volume > 100000000) score += 10;
-    if (volume > 500000000) score += 10;
-    if (volume < 10000000) score -= 10;
-
-    if (price > ema) score += 10;
-    if (price < ema) score -= 10;
-    if (macd > 0) score += 10;
-    if (macd < 0) score -= 10;
-
-    score = Math.max(0, Math.min(100, score));
-
-    if (score >= 80)
-      return {
-        text: "GÜÇLÜ AL",
-        type: "SPOT",
-        color: "text-green-400 bg-green-500/20",
-        icon: TrendingUp,
-        score,
-        rsi,
-        ema,
-        macd,
-      };
-
-    if (score >= 65)
-      return {
-        text: "AL",
-        type: "SPOT",
-        color: "text-emerald-400 bg-emerald-500/20",
-        icon: TrendingUp,
-        score,
-        rsi,
-        ema,
-        macd,
-      };
-
-    if (score <= 20)
-      return {
-        text: "GÜÇLÜ SAT",
-        type: "KISA",
-        color: "text-red-500 bg-red-500/20",
-        icon: TrendingDown,
-        score,
-        rsi,
-        ema,
-        macd,
-      };
-
-    if (score <= 35)
-      return {
-        text: "SAT",
-        type: "KISA",
-        color: "text-red-400 bg-red-500/20",
-        icon: TrendingDown,
-        score,
-        rsi,
-        ema,
-        macd,
-      };
-
     return {
-      text: "BEKLE",
-      type: "İZLE",
-      color: "text-yellow-400 bg-yellow-500/20",
-      icon: Target,
+      text,
+      type,
+      color,
+      icon,
       score,
+      probability,
+      safety,
+      confirmations,
       rsi,
       ema,
+      ema20: ema,
+      ema50: ema,
       macd,
+      support,
+      resistance,
+      resistanceBreak,
+      supportBreak,
+      volumeRatio: volumeScore === 2 ? 1.8 : volumeScore === 1 ? 1.25 : volumeScore === -1 ? 0.55 : 1,
+      volumeBoost: volumeScore >= 1,
+      trendUp,
+      trendDown,
+      trendSlopePct: change,
+      moneyIn,
+      moneyOut,
+      traderBias,
+      newsSentiment,
+      whaleFlow: Math.min(95, Math.max(5, Math.round(Math.abs(change) * 8 + volumeScore * 12 + 20))),
     };
   };
 
@@ -827,84 +877,31 @@ function TraderProApp() {
     price = safeNumber(price);
     if (!signal || price <= 0) return null;
 
+    const probability = safeNumber(signal.probability || signal.score, 60);
+    const tight = probability >= 85 ? 1 : probability >= 75 ? 0.85 : 0.7;
+
+    // Kısa TP modu: kullanıcı hızlı çıkış görebilsin diye hedefler yakın tutuldu.
     if (signal.type === "SPOT") {
       return {
         entry: price,
-        tp1: price * 1.02,
-        tp2: price * 1.04,
-        tp3: price * 1.06,
-        sl: price * 0.98,
+        tp1: price * (1 + 0.006 * tight),
+        tp2: price * (1 + 0.012 * tight),
+        tp3: price * (1 + 0.018 * tight),
+        sl: price * (1 - 0.0075 * tight),
       };
     }
 
     if (signal.type === "KISA") {
       return {
         entry: price,
-        tp1: price * 0.98,
-        tp2: price * 0.96,
-        tp3: price * 0.94,
-        sl: price * 1.02,
+        tp1: price * (1 - 0.006 * tight),
+        tp2: price * (1 - 0.012 * tight),
+        tp3: price * (1 - 0.018 * tight),
+        sl: price * (1 + 0.0075 * tight),
       };
     }
 
     return null;
-  };
-
-  const buildTelegramSignalMessage = (coin, signal, targets, requiredPackage = "SERBEST") => {
-    const symbol = String(coin?.symbol || "COIN").replace("USDT", "/USDT");
-    const score = Math.round(safeNumber(signal?.score));
-    const rsi = Math.round(safeNumber(signal?.rsi));
-    const macd = safeNumber(signal?.macd);
-    const ema = safeNumber(signal?.ema);
-
-    return [
-      `🚀 ${symbol} GÜÇLÜ AL SİNYALİ`,
-      "",
-      `📊 Skor: ${score}/100`,
-      `📈 RSI: ${rsi}`,
-      `📉 EMA: $${formatPrice(ema)}`,
-      `⚡ MACD: ${formatPrice(macd)}`,
-      "",
-      `💰 Giriş: $${formatPrice(targets?.entry || coin?.lastPrice)}`,
-      `🎯 TP1: $${formatPrice(targets?.tp1)}`,
-      `🎯 TP2: $${formatPrice(targets?.tp2)}`,
-      `🎯 TP3: $${formatPrice(targets?.tp3)}`,
-      `🛑 Stop Loss: $${formatPrice(targets?.sl)}`,
-      "",
-      `🔐 Paket: ${requiredPackage} ve üstü`,
-      "⏱ 15 dakikalık kontrol ile gönderildi.",
-      "⚠️ Yatırım tavsiyesi değildir."
-    ].join("\n");
-  };
-
-  const makeSignalSnapshot = (coin) => {
-    if (!coin?.symbol) return null;
-
-    const price = safeNumber(coin.lastPrice);
-    const change = safeNumber(coin.priceChangePercent);
-    const volume = safeNumber(coin.quoteVolume);
-    const candleAnalysis = candleSignals?.[coin.symbol] || null;
-    const liveSignal = getProSignal(price, change, volume, coin, candleAnalysis);
-    const targets = getTargets(price, liveSignal);
-    const now = new Date();
-
-    return {
-      symbol: coin.symbol,
-      createdAt: now.toISOString(),
-      date: now.toLocaleDateString("tr-TR"),
-      time: now.toLocaleTimeString("tr-TR"),
-      price,
-      signal: {
-        text: liveSignal.text,
-        type: liveSignal.type,
-        color: liveSignal.color,
-        score: safeNumber(liveSignal.score),
-        rsi: safeNumber(liveSignal.rsi),
-        ema: safeNumber(liveSignal.ema),
-        macd: safeNumber(liveSignal.macd),
-      },
-      targets,
-    };
   };
 
   const getSignalIcon = (signal) => {
@@ -2550,6 +2547,21 @@ const addAlert = (coin, signal) => {
                     </div>
 
                     <div className="flex justify-between">
+                      <span className="text-emerald-300 font-semibold">Olasılık</span>
+                      <span>%{Math.round(signal.probability || signal.score || 0)}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-blue-300 font-semibold">Para Giriş/Çıkış</span>
+                      <span>%{signal.moneyIn || 50} / %{signal.moneyOut || 50}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-purple-300 font-semibold">Trend/Haber</span>
+                      <span>{signal.traderBias || "DENGELİ"} · {signal.newsSentiment || "NÖTR"}</span>
+                    </div>
+
+                    <div className="flex justify-between">
                       <span className="text-cyan-300 font-semibold">RSI</span>
                       <span
                         className={`font-bold ${
@@ -2966,6 +2978,36 @@ const addAlert = (coin, signal) => {
                   <div className="flex justify-between">
                     <span className="text-cyan-300 font-semibold">Güven Skoru</span>
                     <span className="font-bold">{selectedSignal.score} / 100</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-emerald-300 font-semibold">Yön Olasılığı</span>
+                    <span className="font-bold text-emerald-200">%{Math.round(selectedSignal.probability || selectedSignal.score || 0)}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-blue-300 font-semibold">Para Girişi</span>
+                    <span className="font-bold text-blue-200">%{selectedSignal.moneyIn || 50}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-pink-300 font-semibold">Para Çıkışı</span>
+                    <span className="font-bold text-pink-200">%{selectedSignal.moneyOut || 50}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-purple-300 font-semibold">Trader Yoğunluğu</span>
+                    <span className="font-bold text-purple-200">{selectedSignal.traderBias || "DENGELİ"}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-yellow-300 font-semibold">Haber Nabzı</span>
+                    <span className="font-bold text-yellow-200">{selectedSignal.newsSentiment || "NÖTR"}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-orange-300 font-semibold">Direnç / Destek</span>
+                    <span className="font-bold text-orange-200">${formatPrice(selectedSignal.resistance)} / ${formatPrice(selectedSignal.support)}</span>
                   </div>
 
                   <div className="flex justify-between">
