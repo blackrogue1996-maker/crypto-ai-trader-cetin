@@ -1543,9 +1543,11 @@ const addAlert = (coin, signal) => {
 
   const openCoin = (coin) => {
     if (!coin?.symbol) return;
+    const nextCoin = { ...coin };
     try { localStorage.setItem("trader_selected_coin", coin.symbol); } catch {}
-    ensureSignalSnapshot(coin);
-    setSelectedCoin({ ...coin });
+    ensureSignalSnapshot(nextCoin);
+    setSelectedCoin(nextCoin);
+    try { window.scrollTo({ top: 0, behavior: "instant" }); } catch { try { window.scrollTo(0, 0); } catch {} }
   };
 
   const handleCoinCardOpen = (event, coin) => {
@@ -2580,6 +2582,23 @@ const addAlert = (coin, signal) => {
                     }`}
                 
                 >
+                  {!isLocked && (
+                    <button
+                      type="button"
+                      aria-label={`${coin?.symbol || "Coin"} büyük grafik ekranını aç`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openCoin(coin);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openCoin(coin);
+                      }}
+                      className="absolute inset-0 z-20 cursor-pointer bg-transparent"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(34,211,238,0.22),transparent_32%),radial-gradient(circle_at_90%_0%,rgba(217,70,239,0.24),transparent_30%)] opacity-80 pointer-events-none" />
                   <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-400/10 blur-2xl group-hover:bg-cyan-300/25 transition-all" />
                   <div className="relative flex justify-between items-start mb-2">
@@ -2601,7 +2620,7 @@ const addAlert = (coin, signal) => {
                           e.stopPropagation();
                           toggleFavorite(coin?.symbol);
                         }}
-                        className="relative z-10 hover:scale-125 transition-transform"
+                        className="relative z-30 hover:scale-125 transition-transform"
                       >
                         <Star
                           className={
@@ -2613,7 +2632,7 @@ const addAlert = (coin, signal) => {
                       </button>
                     </div>
                  {isLocked && (
-  <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl">
+  <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 rounded-xl">
     <div className="text-center text-xs text-white">
       🔒 Kilitli
       <div className="text-cyan-300 mt-1">
