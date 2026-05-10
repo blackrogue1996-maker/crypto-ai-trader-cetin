@@ -671,33 +671,33 @@ function TraderProApp() {
 
     // Güvenli mod: AL/SAT için tek gösterge yetmez, en az 5 onay ister.
     if (score >= 82 && confirmations >= 5 && !rsiHot && !volumeWeak) {
-      text = "GÜVENLİ AL";
+      text = "GÜÇLÜ AL";
       type = "SPOT";
       color = "text-emerald-300 bg-emerald-500/20";
       icon = TrendingUp;
       probability = Math.min(94, score + confirmations);
       safety = "YÜKSEK";
     } else if (score >= 70 && confirmations >= 4 && !rsiHot) {
-      text = "AL / ONAY BEKLE";
-      type = "SPOT";
-      color = "text-cyan-300 bg-cyan-500/20";
-      icon = TrendingUp;
-      probability = Math.min(84, score);
-      safety = "ORTA+";
+      text = "BEKLE";
+      type = "İZLE";
+      color = "text-yellow-300 bg-yellow-500/20";
+      icon = Target;
+      probability = Math.min(78, score);
+      safety = "ONAY BEKLİYOR";
     } else if (score <= 22 && sellConfirmations >= 5) {
-      text = "GÜVENLİ SAT";
+      text = "GÜÇLÜ SAT";
       type = "KISA";
       color = "text-red-300 bg-red-500/20";
       icon = TrendingDown;
       probability = Math.min(94, 100 - score + sellConfirmations);
       safety = "YÜKSEK";
     } else if (score <= 35 && sellConfirmations >= 4) {
-      text = "SAT / ONAY BEKLE";
-      type = "KISA";
-      color = "text-orange-300 bg-orange-500/20";
-      icon = TrendingDown;
-      probability = Math.min(84, 100 - score);
-      safety = "ORTA+";
+      text = "BEKLE";
+      type = "İZLE";
+      color = "text-yellow-300 bg-yellow-500/20";
+      icon = Target;
+      probability = Math.min(78, 100 - score);
+      safety = "ONAY BEKLİYOR";
     }
 
     return {
@@ -813,33 +813,33 @@ function TraderProApp() {
     let safety = "ORTA";
 
     if (score >= 82 && confirmations >= 5 && rsi <= 70) {
-      text = "GÜVENLİ AL";
+      text = "GÜÇLÜ AL";
       type = "SPOT";
       color = "text-emerald-300 bg-emerald-500/20";
       icon = TrendingUp;
       probability = Math.min(94, score + confirmations);
       safety = "YÜKSEK";
     } else if (score >= 70 && confirmations >= 4 && rsi <= 70) {
-      text = "AL / ONAY BEKLE";
-      type = "SPOT";
-      color = "text-cyan-300 bg-cyan-500/20";
-      icon = TrendingUp;
-      probability = Math.min(84, score);
-      safety = "ORTA+";
+      text = "BEKLE";
+      type = "İZLE";
+      color = "text-yellow-300 bg-yellow-500/20";
+      icon = Target;
+      probability = Math.min(78, score);
+      safety = "ONAY BEKLİYOR";
     } else if (score <= 22 && sellConfirmations >= 5) {
-      text = "GÜVENLİ SAT";
+      text = "GÜÇLÜ SAT";
       type = "KISA";
       color = "text-red-300 bg-red-500/20";
       icon = TrendingDown;
       probability = Math.min(94, 100 - score + sellConfirmations);
       safety = "YÜKSEK";
     } else if (score <= 35 && sellConfirmations >= 4) {
-      text = "SAT / ONAY BEKLE";
-      type = "KISA";
-      color = "text-orange-300 bg-orange-500/20";
-      icon = TrendingDown;
-      probability = Math.min(84, 100 - score);
-      safety = "ORTA+";
+      text = "BEKLE";
+      type = "İZLE";
+      color = "text-yellow-300 bg-yellow-500/20";
+      icon = Target;
+      probability = Math.min(78, 100 - score);
+      safety = "ONAY BEKLİYOR";
     }
 
     return {
@@ -2466,7 +2466,7 @@ const addAlert = (coin, signal) => {
                 <div
                   key={`${coin?.symbol || "coin"}-${index}`}
                   onClick={() => openCoin(coin)}
-                  className={`relative bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/10 shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:bg-white/5 hover:shadow-[0_0_25px_rgba(34,211,238,0.45)] ${
+                  title="Grafik ve detay için tıkla" className={`relative bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/10 shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:bg-white/5 hover:shadow-[0_0_25px_rgba(34,211,238,0.45)] ${
                     isLocked
                       ? "opacity-40 blur-sm pointer-events-none"
                       : favorites.includes(coin?.symbol)
@@ -2539,6 +2539,17 @@ const addAlert = (coin, signal) => {
                     <SignalIcon size={18} />
                     <span>{signal.text}</span>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openCoin(coin);
+                    }}
+                    className="mt-2 w-full rounded-xl bg-cyan-400/15 border border-cyan-300/25 px-3 py-2 text-xs font-black text-cyan-100 hover:bg-cyan-400/25 transition"
+                  >
+                    📈 Grafiği Aç
+                  </button>
 
                   <div className="mt-3 text-sm space-y-1">
                     <div className="flex justify-between">
