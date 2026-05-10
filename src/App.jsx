@@ -82,6 +82,43 @@ const getSignalRequiredPackage = (signal = {}) => {
 
 const GM_USERNAME = "Gm54";
 const GM_PASSWORD = "0956711996";
+
+const FIREBASE_API_KEY =
+  import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDLL9Mm3YagSM7LCE9tZxP_QhpgcynbGBM";
+
+const firebaseAuthRequest = async (action, payload) => {
+  if (!FIREBASE_API_KEY) {
+    throw new Error("Firebase API key eksik. Vercel Environment Variables kontrol et.");
+  }
+
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:${action}?key=${FIREBASE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const code = data?.error?.message || "AUTH_ERROR";
+    const messages = {
+      EMAIL_EXISTS: "Bu e-posta zaten kayıtlı. Giriş yapabilirsin.",
+      INVALID_EMAIL: "E-posta adresi hatalı.",
+      WEAK_PASSWORD: "Şifre en az 6 karakter olmalı.",
+      EMAIL_NOT_FOUND: "Bu e-posta kayıtlı değil.",
+      INVALID_PASSWORD: "Şifre hatalı.",
+      INVALID_LOGIN_CREDENTIALS: "E-posta veya şifre hatalı.",
+      USER_DISABLED: "Bu hesap devre dışı bırakılmış.",
+      TOO_MANY_ATTEMPTS_TRY_LATER: "Çok fazla deneme yapıldı. Biraz bekle.",
+    };
+    throw new Error(messages[code] || `Firebase hata: ${code}`);
+  }
+
+  return data;
+};
+
 const DEFAULT_USERS = [
   { username: GM_USERNAME, password: GM_PASSWORD, name: "GM Yönetici", email: "gm54@traderpro.com", role: "GM", package: "ULTRA", expiresAt: "2099-12-31T23:59:59.000Z", status: "active" },
 ];
@@ -1180,7 +1217,7 @@ const addAlert = (coin, signal) => {
   };
 
 
-  const handleAuthDemo = () => {
+  const handleAuthDemo = async () => {
     const username = authUsername.trim();
     const password = authPassword.trim();
     const email = authEmail.trim();
@@ -1191,98 +1228,151 @@ const addAlert = (coin, signal) => {
       return;
     }
 
-    if (authMode === "register") {
-      if (!email || !emailConfirm) {
-        setAuthMessage("E-posta gir.");
-        return;
-      }
-
-      if (email.toLowerCase() !== emailConfirm.toLowerCase()) {
-        setAuthMessage("E-postalar eşleşmiyor.");
-        return;
-      }
-
-      const exists = demoUsers.some(
-        (user) => String(user.username).toLowerCase() === username.toLowerCase()
-      );
-
-      if (exists) {
-        setAuthMessage("Bu kullanıcı zaten kayıtlı. Giriş yapabilirsin.");
-        return;
-      }
-
-      const newUser = normalizeUser({
-        username,
-        password,
-        name: username,
-        email,
-        role: "user",
-        package: "SERBEST",
-        expiresAt: null,
-      });
-
-      setDemoUsers((prev) => [...prev, newUser]);
-      setCurrentUser(newUser);
-      setGmMode(false);
-
-      try {
-        localStorage.setItem("trader_current_user", JSON.stringify(newUser));
-        localStorage.removeItem("trader_gm_mode");
-      } catch {}
-
-      setActiveSubscription({ plan: "SERBEST", purchasedAt: null, expiresAt: null });
-      setPlan("SERBEST");
-      setAuthUsername("");
-      setAuthPassword("");
-      setAuthEmail("");
-      setAuthEmailConfirm("");
-      setAuthMessage("Kayıt başarılı, giriş yapıldı.");
-      return;
-    }
-
-    const foundUser = demoUsers.find(
-      (user) =>
-        String(user.username) === username &&
-        String(user.password) === password &&
-        user.status !== "blocked"
-    );
-
-    if (!foundUser) {
-      setAuthMessage("Hatalı kullanıcı adı veya şifre.");
-      return;
-    }
-
-    const normalized = normalizeUser(foundUser);
-    setCurrentUser(normalized);
+    setAuthMessage("Kontrol ediliyor...");
 
     try {
-      localStorage.setItem("trader_current_user", JSON.stringify(normalized));
-    } catch {}
+      if (authMode === "register") {
+        if (!email || !emailConfirm) {
+          setAuthMessage("E-posta gir.");
+          return;
+        }
 
-    if (String(normalized.role).toUpperCase() === "GM") {
-      setGmMode(true);
-      try { localStorage.setItem("trader_gm_mode", "1"); } catch {}
-      setActiveSubscription({ plan: "ULTRA", purchasedAt: new Date().toISOString(), expiresAt: "2099-12-31T23:59:59.000Z" });
-      setPlan("ULTRA");
-      setAuthMessage("GM girişi başarılı.");
-      return;
+        if (email.toLowerCase() !== emailConfirm.toLowerCase()) {
+          setAuthMessage("E-postalar eşleşmiyor.");
+          return;
+        }
+
+        const exists = demoUsers.some(
+          (user) => String(user.username).toLowerCase() === username.toLowerCase()
+        );
+
+        if (exists) {
+          setAuthMessage("Bu kullanıcı zaten kayıtlı. Giriş yapabilirsin.");
+          return;
+        }
+
+        const firebaseUser = await firebaseAuthRequest("signUp", {
+          email,
+          password,
+          returnSecureToken: true,
+        });
+
+        const newUser = normalizeUser({
+          username,
+          password,
+          name: username,
+          email,
+          uid: firebaseUser.localId,
+          role: "user",
+          package: "SERBEST",
+          expiresAt: null,
+        });
+
+        setDemoUsers((prev) => [...prev, newUser]);
+        setCurrentUser(newUser);
+        setGmMode(false);
+
+        try {
+          localStorage.setItem("trader_current_user", JSON.stringify(newUser));
+          localStorage.setItem("trader_firebase_id_token", firebaseUser.idToken || "");
+          localStorage.removeItem("trader_gm_mode");
+        } catch {}
+
+        setActiveSubscription({ plan: "SERBEST", purchasedAt: null, expiresAt: null });
+        setPlan("SERBEST");
+        setAuthUsername("");
+        setAuthPassword("");
+        setAuthEmail("");
+        setAuthEmailConfirm("");
+        setAuthMessage("Firebase kayıt başarılı, giriş yapıldı.");
+        return;
+      }
+
+      const gmUser = demoUsers.find(
+        (user) =>
+          String(user.username) === username &&
+          String(user.password) === password &&
+          String(user.role).toUpperCase() === "GM"
+      );
+
+      if (gmUser) {
+        const normalized = normalizeUser(gmUser);
+        setCurrentUser(normalized);
+        setGmMode(true);
+        try {
+          localStorage.setItem("trader_current_user", JSON.stringify(normalized));
+          localStorage.setItem("trader_gm_mode", "1");
+        } catch {}
+        setActiveSubscription({ plan: "ULTRA", purchasedAt: new Date().toISOString(), expiresAt: "2099-12-31T23:59:59.000Z" });
+        setPlan("ULTRA");
+        setAuthMessage("GM girişi başarılı.");
+        return;
+      }
+
+      const savedUser = demoUsers.find(
+        (user) =>
+          (String(user.username).toLowerCase() === username.toLowerCase() ||
+            String(user.email).toLowerCase() === username.toLowerCase()) &&
+          user.status !== "blocked"
+      );
+
+      const loginEmail = username.includes("@") ? username : savedUser?.email;
+      if (!loginEmail) {
+        setAuthMessage("Bu kullanıcı için e-posta bulunamadı. E-posta ile giriş yap veya yeniden kayıt ol.");
+        return;
+      }
+
+      const firebaseUser = await firebaseAuthRequest("signInWithPassword", {
+        email: loginEmail,
+        password,
+        returnSecureToken: true,
+      });
+
+      const normalized = normalizeUser(
+        savedUser || {
+          username: loginEmail.split("@")[0],
+          password,
+          name: loginEmail.split("@")[0],
+          email: loginEmail,
+          uid: firebaseUser.localId,
+          role: "user",
+          package: "SERBEST",
+          expiresAt: null,
+        }
+      );
+
+      setDemoUsers((prev) => {
+        const exists = prev.some((u) => String(u.email).toLowerCase() === String(normalized.email).toLowerCase());
+        return exists ? prev : [...prev, normalized];
+      });
+      setCurrentUser(normalized);
+
+      try {
+        localStorage.setItem("trader_current_user", JSON.stringify(normalized));
+        localStorage.setItem("trader_firebase_id_token", firebaseUser.idToken || "");
+      } catch {}
+
+      const userPlan = normalized.package || "SERBEST";
+      setGmMode(false);
+      try { localStorage.removeItem("trader_gm_mode"); } catch {}
+      setActiveSubscription({
+        plan: userPlan,
+        purchasedAt: new Date().toISOString(),
+        expiresAt: normalized.expiresAt || null,
+      });
+      setPlan(userPlan);
+      setAuthMessage("Firebase giriş başarılı.");
+    } catch (err) {
+      setAuthMessage(err?.message || "Firebase giriş/kayıt hatası.");
     }
-
-    const userPlan = normalized.package || "SERBEST";
-    setGmMode(false);
-    try { localStorage.removeItem("trader_gm_mode"); } catch {}
-    setActiveSubscription({
-      plan: userPlan,
-      purchasedAt: new Date().toISOString(),
-      expiresAt: normalized.expiresAt || null,
-    });
-    setPlan(userPlan);
-    setAuthMessage("Giriş başarılı.");
   };
 
   const logoutDemo = () => {
     setCurrentUser(null);
-    try { localStorage.removeItem("trader_current_user"); } catch {}
+    try {
+      localStorage.removeItem("trader_current_user");
+      localStorage.removeItem("trader_firebase_id_token");
+    } catch {}
     setPurchaseNotice("");
   };
 
