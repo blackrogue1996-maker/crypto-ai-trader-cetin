@@ -228,6 +228,8 @@ function TraderProApp() {
   const [authMessage, setAuthMessage] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authEmailConfirm, setAuthEmailConfirm] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [showResetBox, setShowResetBox] = useState(false);
   const [demoUsers, setDemoUsers] = useState(() => getStoredUsers());
   const [gmMode, setGmMode] = useState(() => {
     try { return localStorage.getItem("trader_gm_mode") === "1"; } catch { return false; }
@@ -1242,7 +1244,7 @@ const addAlert = (coin, signal) => {
 
     const foundUser = demoUsers.find(
       (user) =>
-        String(user.username) === username &&
+        (String(user.username).toLowerCase() === username.toLowerCase() || String(user.email || "").toLowerCase() === username.toLowerCase()) &&
         String(user.password) === password &&
         user.status !== "blocked"
     );
@@ -1278,6 +1280,29 @@ const addAlert = (coin, signal) => {
     });
     setPlan(userPlan);
     setAuthMessage("Giriş başarılı.");
+  };
+
+
+  const handlePasswordResetDemo = () => {
+    const mail = resetEmail.trim().toLowerCase();
+
+    if (!mail) {
+      setAuthMessage("Şifre sıfırlama için e-posta adresini yaz.");
+      return;
+    }
+
+    const foundUser = demoUsers.find(
+      (user) => String(user.email || "").toLowerCase() === mail
+    );
+
+    if (!foundUser) {
+      setAuthMessage("Bu e-posta ile kayıtlı kullanıcı bulunamadı.");
+      return;
+    }
+
+    setAuthMessage("Şifre sıfırlama isteği alındı. Demo sistemde mail gönderimi sonraki adımda Firebase Auth ile aktif edilir.");
+    setShowResetBox(false);
+    setResetEmail("");
   };
 
   const logoutDemo = () => {
@@ -1766,6 +1791,37 @@ const addAlert = (coin, signal) => {
                     type="password"
                     className="w-full rounded-2xl bg-black/40 border border-cyan-300/20 px-4 py-4 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
                   />
+
+                  {authMode === "login" && (
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                      <button
+                        type="button"
+                        onClick={() => { setShowResetBox((v) => !v); setAuthMessage(""); }}
+                        className="w-full text-left text-sm font-black text-cyan-200 hover:text-white underline underline-offset-4"
+                      >
+                        Şifremi unuttum
+                      </button>
+
+                      {showResetBox && (
+                        <div className="mt-3 space-y-2">
+                          <input
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            placeholder="E-posta adresini yaz"
+                            type="email"
+                            className="w-full rounded-xl bg-black/40 border border-cyan-300/20 px-3 py-3 outline-none focus:ring-2 focus:ring-cyan-300 font-bold placeholder:text-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={handlePasswordResetDemo}
+                            className="w-full rounded-xl bg-cyan-300 text-slate-950 font-black py-3"
+                          >
+                            Sıfırlama Maili Gönder
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {authMode === "register" && (
                     <>
