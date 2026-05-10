@@ -236,6 +236,7 @@ function TraderProApp() {
   });
   const [gmNewUser, setGmNewUser] = useState({ username: "", password: "", name: "", email: "", package: "SERBEST", days: "30" });
   const [gmNotice, setGmNotice] = useState("");
+  const [gmSearch, setGmSearch] = useState("");
   const [activeSubscription, setActiveSubscription] = useState(() => {
     try {
       const saved = localStorage.getItem("trader_subscription");
@@ -255,6 +256,31 @@ function TraderProApp() {
   useEffect(() => {
     saveStoredUsers(demoUsers);
   }, [demoUsers]);
+
+  useEffect(() => {
+    if (!currentUser || String(currentUser.role).toUpperCase() === "GM") return;
+    const synced = normalizeUser({
+      ...currentUser,
+      username: currentUser.username || currentUser.email || `user_${Date.now()}`,
+      email: currentUser.email || "",
+      name: currentUser.name || currentUser.username || currentUser.email || "Kullanıcı",
+      createdAt: currentUser.createdAt || new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+    });
+    setDemoUsers((prev) => {
+      const key = String(synced.username || synced.email).toLowerCase();
+      const exists = prev.some((u) =>
+        String(u.username || "").toLowerCase() === key ||
+        (synced.email && String(u.email || "").toLowerCase() === String(synced.email).toLowerCase())
+      );
+      if (exists) return prev.map((u) => {
+        const same = String(u.username || "").toLowerCase() === key ||
+          (synced.email && String(u.email || "").toLowerCase() === String(synced.email).toLowerCase());
+        return same ? normalizeUser({ ...u, ...synced }) : u;
+      });
+      return [...prev, synced];
+    });
+  }, [currentUser]);
 
   useEffect(() => {
     const stopBadRuntimeData = (event) => {
@@ -1221,6 +1247,8 @@ const addAlert = (coin, signal) => {
         role: "user",
         package: "SERBEST",
         expiresAt: null,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
       });
 
       setDemoUsers((prev) => [...prev, newUser]);
@@ -1254,7 +1282,10 @@ const addAlert = (coin, signal) => {
       return;
     }
 
-    const normalized = normalizeUser(foundUser);
+    const normalized = normalizeUser({ ...foundUser, lastLoginAt: new Date().toISOString() });
+    setDemoUsers((prev) => prev.map((u) =>
+      String(u.username).toLowerCase() === String(normalized.username).toLowerCase() ? normalized : u
+    ));
     setCurrentUser(normalized);
 
     try {
@@ -1608,83 +1639,143 @@ const addAlert = (coin, signal) => {
 
   if (currentUser && String(currentUser.role).toUpperCase() === "GM" && gmMode) {
     const normalUsers = demoUsers.filter((u) => String(u.role).toUpperCase() !== "GM").map(normalizeUser);
+    const filteredNormalUsers = normalUsers.filter((user) => {
+      const q = gmSearch.trim().toLowerCase();
+      if (!q) return true;
+      return [user.username, user.name, user.email, user.package, user.status]
+        .some((v) => String(v || "").toLowerCase().includes(q));
+    });
+    const premiumCount = normalUsers.filter((u) => (u.package || "SERBEST") !== "SERBEST").length;
+    const blockedCount = normalUsers.filter((u) => u.status === "blocked").length;
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <div>
-              <div className="text-cyan-200 text-sm font-black tracking-[0.35em]">GM YÖNETİM PANELİ</div>
-              <h1 className="text-4xl font-black mt-1">Kripto Y.Z Pro Çetin</h1>
-              <p className="text-slate-300 mt-1">Kullanıcı, paket, süre ve ödeme kontrol merkezi</p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={gmEnterTrader} className="rounded-2xl bg-cyan-300 text-slate-950 px-5 py-3 font-black">Trader Paneline Gir</button>
-              <button onClick={logoutDemo} className="rounded-2xl border border-pink-400/40 bg-pink-500/20 px-5 py-3 font-black">Çıkış</button>
-            </div>
-          </div>
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#164e63_0,#020617_35%,#050116_75%)] text-white p-4 md:p-6 overflow-hidden">
+        <div className="pointer-events-none fixed inset-0 opacity-30">
+          <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-cyan-400 blur-3xl" />
+          <div className="absolute top-24 right-10 h-96 w-96 rounded-full bg-fuchsia-500 blur-3xl" />
+          <div className="absolute bottom-0 left-1/2 h-72 w-72 rounded-full bg-blue-500 blur-3xl" />
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-5">
-            {[
-              ["👥", "Kullanıcı", normalUsers.length],
-              ["💎", "Premium", normalUsers.filter(u => u.package !== "SERBEST").length],
-              ["👑", "GM Yetki", "Sınırsız"],
-              ["💳", "İyzico", "Demo Hazır"],
-            ].map(([icon, title, value]) => (
-              <div key={title} className="rounded-3xl border border-cyan-400/20 bg-white/10 backdrop-blur-xl p-5">
-                <div className="text-3xl">{icon}</div>
-                <div className="text-sm text-slate-300 mt-2">{title}</div>
-                <div className="text-2xl font-black text-cyan-200">{value}</div>
+        <div className="relative max-w-7xl mx-auto">
+          <div className="rounded-[34px] border border-white/10 bg-white/10 backdrop-blur-2xl p-5 md:p-7 mb-6 shadow-2xl shadow-cyan-500/10">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-cyan-100 text-xs font-black tracking-[0.3em]">
+                  ⚡ GM KOMUTA MERKEZİ
+                </div>
+                <h1 className="text-3xl md:text-5xl font-black mt-4 bg-gradient-to-r from-cyan-200 via-white to-fuchsia-200 bg-clip-text text-transparent">
+                  Kripto AI Trader Kontrol Paneli
+                </h1>
+                <p className="text-slate-300 mt-2">Kayıt olan kullanıcılar, paket yetkileri ve demo ödeme yönetimi tek ekranda.</p>
               </div>
-            ))}
+              <div className="flex flex-wrap gap-2">
+                <button onClick={gmEnterTrader} className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 px-4 py-3 font-black transition">Siteye Git</button>
+                <button onClick={logoutDemo} className="rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-300/20 px-4 py-3 font-black transition">Çıkış</button>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+              {[
+                ["👥", "Toplam Kullanıcı", normalUsers.length, "from-cyan-400/20 to-blue-500/10"],
+                ["💎", "Premium", premiumCount, "from-fuchsia-400/20 to-purple-500/10"],
+                ["👑", "GM Yetki", "Sınırsız", "from-yellow-400/20 to-orange-500/10"],
+                ["🛡️", "Engelli", blockedCount, "from-red-400/20 to-rose-500/10"],
+              ].map(([icon, title, value, grad]) => (
+                <div key={title} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${grad} p-5 shadow-xl`}>
+                  <div className="text-3xl">{icon}</div>
+                  <div className="text-slate-300 text-xs font-bold mt-3 uppercase tracking-wider">{title}</div>
+                  <div className="text-3xl font-black mt-1">{value}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-5">
-            <div className="rounded-3xl border border-cyan-400/20 bg-black/30 backdrop-blur-xl p-5">
-              <h2 className="text-2xl font-black mb-1">Kullanıcı Oluştur</h2>
-              <p className="text-sm text-slate-300 mb-4">Kayıt sistemi bağlanana kadar demo/veritabanı mantığı localStorage ile çalışır.</p>
+          {gmNotice && (
+            <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-cyan-100 font-bold">
+              {gmNotice}
+            </div>
+          )}
+
+          <div className="grid lg:grid-cols-[380px_1fr] gap-5">
+            <div className="rounded-[30px] border border-white/10 bg-black/35 backdrop-blur-2xl p-5 shadow-2xl shadow-cyan-500/10 h-fit">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-black">Kullanıcı Oluştur</h2>
+                  <p className="text-xs text-slate-400 mt-1">Manuel kullanıcı ekle, paket ata.</p>
+                </div>
+                <div className="h-12 w-12 rounded-2xl bg-cyan-300/20 grid place-items-center text-2xl">➕</div>
+              </div>
               <div className="space-y-3">
-                <input value={gmNewUser.username} onChange={(e)=>setGmNewUser({...gmNewUser, username:e.target.value})} placeholder="Kullanıcı adı" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none" />
-                <input value={gmNewUser.password} onChange={(e)=>setGmNewUser({...gmNewUser, password:e.target.value})} placeholder="Şifre" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none" />
-                <input value={gmNewUser.name} onChange={(e)=>setGmNewUser({...gmNewUser, name:e.target.value})} placeholder="Ad soyad / görünen isim" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none" />
-                <input value={gmNewUser.email} onChange={(e)=>setGmNewUser({...gmNewUser, email:e.target.value})} placeholder="E-posta" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none" />
-                <div className="grid grid-cols-2 gap-3">
-                  <select value={gmNewUser.package} onChange={(e)=>setGmNewUser({...gmNewUser, package:e.target.value})} className="rounded-2xl bg-slate-900 border border-white/10 px-4 py-3 outline-none">
-                    {['SERBEST','PLATIN','ALTIN','ELITE','ULTRA'].map(p => <option key={p}>{p}</option>)}
+                <input value={gmNewUser.username} onChange={(e)=>setGmNewUser({...gmNewUser, username:e.target.value})} placeholder="Kullanıcı adı" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-300" />
+                <input value={gmNewUser.password} onChange={(e)=>setGmNewUser({...gmNewUser, password:e.target.value})} placeholder="Şifre" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-300" />
+                <input value={gmNewUser.name} onChange={(e)=>setGmNewUser({...gmNewUser, name:e.target.value})} placeholder="Ad soyad / görünme isim" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-300" />
+                <input value={gmNewUser.email} onChange={(e)=>setGmNewUser({...gmNewUser, email:e.target.value})} placeholder="E-posta" className="w-full rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-300" />
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={gmNewUser.package} onChange={(e)=>setGmNewUser({...gmNewUser, package:e.target.value})} className="rounded-2xl bg-slate-900/80 border border-white/10 px-4 py-3 outline-none">
+                    {['SERBEST','PLATIN','ALTIN','ELITE','ULTRA'].map((p)=><option key={p}>{p}</option>)}
                   </select>
-                  <select value={gmNewUser.days} onChange={(e)=>setGmNewUser({...gmNewUser, days:e.target.value})} className="rounded-2xl bg-slate-900 border border-white/10 px-4 py-3 outline-none">
-                    {['1','7','30','SINIRSIZ'].map(d => <option key={d} value={d}>{d === 'SINIRSIZ' ? 'Sınırsız' : `${d} gün`}</option>)}
+                  <select value={gmNewUser.days} onChange={(e)=>setGmNewUser({...gmNewUser, days:e.target.value})} className="rounded-2xl bg-slate-900/80 border border-white/10 px-4 py-3 outline-none">
+                    {['7','15','30','90','365','SINIRSIZ'].map((d)=><option key={d} value={d}>{d === 'SINIRSIZ' ? 'Sınırsız' : `${d} gün`}</option>)}
                   </select>
                 </div>
-                <button onClick={gmAddUser} className="w-full rounded-2xl bg-cyan-300 text-slate-950 py-3 font-black">Kullanıcı Ekle</button>
-                {gmNotice && <div className="rounded-2xl border border-yellow-300/30 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">{gmNotice}</div>}
+                <button onClick={gmAddUser} className="w-full rounded-2xl bg-gradient-to-r from-cyan-300 to-fuchsia-400 text-slate-950 py-3 font-black shadow-lg shadow-cyan-500/20 hover:scale-[1.01] transition">Kullanıcı Ekle</button>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-cyan-400/20 bg-black/30 backdrop-blur-xl p-5 overflow-x-auto">
-              <h2 className="text-2xl font-black mb-4">Kullanıcı Yönetimi</h2>
-              <table className="w-full text-sm">
-                <thead className="text-left text-slate-300">
-                  <tr><th className="py-3">Kullanıcı</th><th>Paket</th><th>Kalan</th><th>Hızlı Paket</th><th>İşlem</th></tr>
-                </thead>
-                <tbody>
-                  {normalUsers.map((user) => (
-                    <tr key={user.username} className="border-t border-white/10">
-                      <td className="py-4"><div className="font-black">{user.name || user.username}</div><div className="text-xs text-slate-400">{user.username} · {user.email}</div></td>
-                      <td><span className="rounded-full bg-cyan-400/15 border border-cyan-300/20 px-3 py-1 font-black text-cyan-200">{user.package || 'SERBEST'}</span></td>
-                      <td>{user.package === 'SERBEST' ? '—' : `${getRemainingDays(user.expiresAt)} gün`}</td>
-                      <td>
-                        <div className="flex flex-wrap gap-2">
+            <div className="rounded-[30px] border border-white/10 bg-black/35 backdrop-blur-2xl p-5 shadow-2xl shadow-fuchsia-500/10 overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-2xl font-black">Kullanıcı Yönetimi</h2>
+                  <p className="text-xs text-slate-400 mt-1">Kayıt olan kullanıcılar burada görünür. Paketleri tek tıkla değiştir.</p>
+                </div>
+                <input
+                  value={gmSearch}
+                  onChange={(e) => setGmSearch(e.target.value)}
+                  placeholder="Kullanıcı ara..."
+                  className="rounded-2xl bg-white/10 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-300 min-w-[220px]"
+                />
+              </div>
+
+              <div className="space-y-3 max-h-[620px] overflow-auto pr-1">
+                {filteredNormalUsers.map((user) => (
+                  <div key={user.username} className="rounded-3xl border border-white/10 bg-gradient-to-r from-white/10 to-white/5 p-4 hover:border-cyan-300/30 transition">
+                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="h-10 w-10 rounded-2xl bg-cyan-300/20 grid place-items-center font-black text-cyan-100">{String(user.name || user.username || 'U').slice(0,1).toUpperCase()}</div>
+                          <div>
+                            <div className="font-black text-lg">{user.name || user.username}</div>
+                            <div className="text-xs text-slate-400 break-all">@{user.username} · {user.email || 'e-posta yok'}</div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                          <span className="rounded-full bg-cyan-400/15 border border-cyan-300/20 px-3 py-1 font-black text-cyan-100">{user.package || 'SERBEST'}</span>
+                          <span className="rounded-full bg-white/10 border border-white/10 px-3 py-1 text-slate-200">Kalan: {user.package === 'SERBEST' ? '—' : `${getRemainingDays(user.expiresAt)} gün`}</span>
+                          {user.createdAt && <span className="rounded-full bg-white/10 border border-white/10 px-3 py-1 text-slate-300">Kayıt: {new Date(user.createdAt).toLocaleDateString('tr-TR')}</span>}
+                          {user.lastLoginAt && <span className="rounded-full bg-white/10 border border-white/10 px-3 py-1 text-slate-300">Son giriş: {new Date(user.lastLoginAt).toLocaleDateString('tr-TR')}</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 xl:items-end">
+                        <div className="flex flex-wrap gap-2 xl:justify-end">
                           {['SERBEST','PLATIN','ALTIN','ELITE','ULTRA'].map((p) => (
-                            <button key={p} onClick={() => gmSetUserPackage(user.username, p, 30)} className="rounded-xl bg-white/10 hover:bg-cyan-400/20 border border-white/10 px-3 py-2 text-xs font-black">{p}</button>
+                            <button key={p} onClick={() => gmSetUserPackage(user.username, p, 30)} className={`rounded-xl border px-3 py-2 text-xs font-black transition ${user.package === p ? 'bg-cyan-300 text-slate-950 border-cyan-200' : 'bg-white/10 hover:bg-cyan-400/20 border-white/10'}`}>{p}</button>
                           ))}
                         </div>
-                      </td>
-                      <td><div className="flex gap-2"><button onClick={() => gmViewAsUser(user)} className="rounded-xl bg-emerald-400/20 border border-emerald-300/20 px-3 py-2 font-black">Kullanıcı Gibi Gör</button><button onClick={() => gmDeleteUser(user.username)} className="rounded-xl bg-red-500/20 border border-red-300/20 px-3 py-2 font-black">Sil</button></div></td>
-                    </tr>
-                  ))}
-                  {normalUsers.length === 0 && <tr><td colSpan="5" className="py-8 text-center text-slate-400">Henüz kullanıcı yok. Soldan kullanıcı ekle.</td></tr>}
-                </tbody>
-              </table>
+                        <div className="flex gap-2 xl:justify-end">
+                          <button onClick={() => gmViewAsUser(user)} className="rounded-xl bg-emerald-400/20 hover:bg-emerald-400/30 border border-emerald-300/20 px-3 py-2 font-black">Kullanıcı Gibi Gör</button>
+                          <button onClick={() => gmDeleteUser(user.username)} className="rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-300/20 px-3 py-2 font-black">Sil</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {filteredNormalUsers.length === 0 && (
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-slate-300">
+                    Henüz kullanıcı yok veya arama sonucu boş. Kullanıcı kayıt olunca burada görünecek.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
