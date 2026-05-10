@@ -2657,18 +2657,66 @@ const addAlert = (coin, signal) => {
                     </div>
                   </div>
 
-                  <div className="relative my-2 h-12 rounded-xl bg-black/30 border border-white/10 p-2 overflow-hidden shadow-inner">
-                    <svg viewBox="0 0 110 60" className="w-full h-full">
+                  <div className="relative my-2 h-14 rounded-xl bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_55%),linear-gradient(180deg,rgba(2,6,23,0.72),rgba(15,23,42,0.9))] border border-cyan-300/20 p-2 overflow-hidden shadow-inner group-hover:border-cyan-300/50">
+                    <div className="absolute inset-0 opacity-35 bg-[linear-gradient(rgba(255,255,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.055)_1px,transparent_1px)] bg-[size:18px_14px]" />
+                    <div className="absolute left-2 right-2 top-1/2 h-px bg-cyan-200/15" />
+                    <svg viewBox="0 0 110 60" className="relative z-10 w-full h-full drop-shadow-[0_0_10px_rgba(34,211,238,0.65)]">
+                      <defs>
+                        <linearGradient id={`sparkLine-${index}`} x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor={change >= 0 ? "#22d3ee" : "#fb7185"} />
+                          <stop offset="55%" stopColor={change >= 0 ? "#5eead4" : "#f472b6"} />
+                          <stop offset="100%" stopColor={change >= 0 ? "#a7f3d0" : "#fecdd3"} />
+                        </linearGradient>
+                        <linearGradient id={`sparkFill-${index}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={change >= 0 ? "#22d3ee" : "#fb7185"} stopOpacity="0.34" />
+                          <stop offset="100%" stopColor={change >= 0 ? "#22d3ee" : "#fb7185"} stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
                       <polyline
                         fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
+                        stroke="rgba(255,255,255,0.14)"
+                        strokeWidth="7"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         points={getMiniChartPoints(coin)}
-                        className={change >= 0 ? "text-green-400" : "text-red-400"}
+                      />
+                      <polyline
+                        fill="none"
+                        stroke={`url(#sparkLine-${index})`}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={getMiniChartPoints(coin)}
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="rgba(255,255,255,0.85)"
+                        strokeWidth="1.15"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={getMiniChartPoints(coin)}
+                        opacity="0.65"
+                      />
+                      {[10, 24, 38, 52, 66, 80, 94].map((x, barIndex) => (
+                        <rect
+                          key={barIndex}
+                          x={x}
+                          y={47 - ((barIndex + index) % 4) * 3}
+                          width="4"
+                          height={8 + ((barIndex + index) % 4) * 3}
+                          rx="1.5"
+                          fill={change >= 0 ? "rgba(45,212,191,0.42)" : "rgba(244,114,182,0.42)"}
+                        />
+                      ))}
+                      <circle
+                        cx="96"
+                        cy={change >= 0 ? "22" : "38"}
+                        r="3.5"
+                        fill={change >= 0 ? "#67e8f9" : "#fda4af"}
+                        className="animate-pulse"
                       />
                     </svg>
+                    <div className="absolute right-2 top-2 rounded-full bg-black/30 px-2 py-0.5 text-[9px] font-black text-cyan-100 border border-white/10">LIVE</div>
                   </div>
 
                   <div
