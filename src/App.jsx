@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import {
   LineChart,
   Line,
@@ -25,28 +23,6 @@ import {
 } from "lucide-react";
 
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-};
-
-const hasFirebaseConfig = Boolean(
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId &&
-  firebaseConfig.appId
-);
-
-const firebaseApp = hasFirebaseConfig
-  ? (getApps().length ? getApps()[0] : initializeApp(firebaseConfig))
-  : null;
-
-const firebaseAuth = firebaseApp ? getAuth(firebaseApp) : null;
 
 const sendTelegramSignal = async (message) => {
   try {
@@ -1315,27 +1291,40 @@ const addAlert = (coin, signal) => {
       return;
     }
 
-    if (!firebaseAuth) {
-      setAuthMessage("Firebase ayarları eksik. Vercel Environment Variables kontrol edilmeli.");
-      return;
-    }
+    const firebaseApiKey = import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDLL9Mm3YagSM7lCE9tZxP_QhpgcynbGBM";
 
     try {
-      await sendPasswordResetEmail(firebaseAuth, mail);
+      const response = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${firebaseApiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestType: "PASSWORD_RESET",
+            email: mail,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const code = data?.error?.message || "UNKNOWN_ERROR";
+        if (code.includes("EMAIL_NOT_FOUND")) {
+          setAuthMessage("Bu e-posta ile kayıtlı kullanıcı bulunamadı.");
+        } else if (code.includes("INVALID_EMAIL")) {
+          setAuthMessage("E-posta adresi geçersiz.");
+        } else {
+          setAuthMessage(`Şifre sıfırlama maili gönderilemedi: ${code}`);
+        }
+        return;
+      }
+
       setAuthMessage("Şifre sıfırlama maili gönderildi. E-postanı kontrol et.");
       setShowResetBox(false);
       setResetEmail("");
     } catch (error) {
-      const code = error?.code || "";
-      if (code.includes("user-not-found")) {
-        setAuthMessage("Bu e-posta ile Firebase'de kayıtlı kullanıcı bulunamadı.");
-      } else if (code.includes("invalid-email")) {
-        setAuthMessage("Geçerli bir e-posta adresi yaz.");
-      } else if (code.includes("unauthorized-domain")) {
-        setAuthMessage("Firebase hata: Bu site domaini Firebase Authentication > Settings > Authorized domains kısmına eklenmeli.");
-      } else {
-        setAuthMessage(`Firebase şifre sıfırlama hatası: ${error?.message || "Bilinmeyen hata"}`);
-      }
+      setAuthMessage("Bağlantı hatası. Biraz sonra tekrar dene.");
     }
   };
 
