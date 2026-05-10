@@ -1543,9 +1543,11 @@ const addAlert = (coin, signal) => {
 
   const openCoin = (coin) => {
     if (!coin?.symbol) return;
-    try { localStorage.setItem("trader_selected_coin", coin.symbol); } catch {}
-    ensureSignalSnapshot(coin);
-    setSelectedCoin(coin);
+    const selected = { ...coin };
+    try { localStorage.setItem("trader_selected_coin", selected.symbol); } catch {}
+    ensureSignalSnapshot(selected);
+    setSelectedCoin(selected);
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
   };
 
   const closeCoin = () => {
@@ -2465,7 +2467,19 @@ const addAlert = (coin, signal) => {
               return (
                 <div
                   key={`${coin?.symbol || "coin"}-${index}`}
-                  onClick={(e) => { e.preventDefault(); openCoin(coin); }}
+                  onClick={(e) => {
+                    if (e.target.closest("button")) return;
+                    e.preventDefault();
+                    openCoin(coin);
+                  }}
+                  onMouseUp={(e) => {
+                    if (e.button !== 0 || e.target.closest("button")) return;
+                    openCoin(coin);
+                  }}
+                  onTouchEnd={(e) => {
+                    if (e.target.closest("button")) return;
+                    openCoin(coin);
+                  }}
                   onDoubleClick={(e) => { e.preventDefault(); openCoin(coin); }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openCoin(coin); }}
                   role="button"
