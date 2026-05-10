@@ -49,6 +49,7 @@ const sendTelegramSignal = async (message) => {
 };
 
 const APP_PUBLIC_URL = "https://kriptoyzpro.com";
+const TELEGRAM_BOT_URL = import.meta.env.VITE_TELEGRAM_BOT_URL || "https://t.me/kripto_ai_trader_bot";
 
 const PACKAGE_LEVELS = {
   SERBEST: 0,
@@ -2372,12 +2373,22 @@ const addAlert = (coin, signal) => {
                   <h2 className="text-base font-black mt-2">30 Günlük Premium Paketler</h2>
                   <p className="text-sm text-slate-300 mt-1">Satın al demo. Gerçek sistemde bu buton iyzico ödeme sayfasını açacak.</p>
                 </div>
-                <button
-                  onClick={resetSubscriptionDemo}
-                  className="px-4 py-2 rounded-xl bg-red-500/15 border border-red-400/30 text-red-100 font-bold text-sm hover:bg-red-500/25"
-                >
-                  Demo Sıfırla
-                </button>
+                {(["ELITE", "ULTRA"].includes(normalizePackageName(activeSubscription.plan)) && getRemainingDays(activeSubscription.expiresAt) > 0) ? (
+                  <button
+                    onClick={() => window.open(TELEGRAM_BOT_URL, "_blank", "noopener,noreferrer")}
+                    className="group relative overflow-hidden px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-500 text-white font-black text-sm shadow-[0_0_24px_rgba(34,211,238,0.45)] hover:scale-[1.03] transition"
+                  >
+                    <span className="relative z-10">🤖 Telegram Botu</span>
+                    <span className="absolute inset-0 bg-white/20 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 skew-x-12" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={resetSubscriptionDemo}
+                    className="px-4 py-2 rounded-xl bg-red-500/15 border border-red-400/30 text-red-100 font-bold text-sm hover:bg-red-500/25"
+                  >
+                    Demo Sıfırla
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
@@ -2422,16 +2433,25 @@ const addAlert = (coin, signal) => {
                         ))}
                       </div>
 
-                      <button
-                        onClick={() => buyPackageDemo(pkg.key)}
-                        className={`mt-2 w-full rounded-xl px-2 py-1.5.5 text-sm font-black transition ${
-                          isActive
-                            ? "bg-yellow-400 text-black"
-                            : "bg-cyan-500/25 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-500/40"
-                        }`}
-                      >
-                        {isActive ? "Aktif Paket" : isUpgrade ? `${pkg.title} Paketine Yükselt` : `${pkg.title} Satın Al`}
-                      </button>
+                      {isActive && ["ELITE", "ULTRA"].includes(pkg.key) ? (
+                        <button
+                          onClick={() => window.open(TELEGRAM_BOT_URL, "_blank", "noopener,noreferrer")}
+                          className="mt-2 w-full rounded-xl px-2 py-2 text-sm font-black transition bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-500 text-white shadow-[0_0_22px_rgba(34,211,238,0.35)] hover:scale-[1.02]"
+                        >
+                          🤖 Telegram Botuna Gir
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => buyPackageDemo(pkg.key)}
+                          className={`mt-2 w-full rounded-xl px-2 py-1.5 text-sm font-black transition ${
+                            isActive
+                              ? "bg-yellow-400 text-black"
+                              : "bg-cyan-500/25 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-500/40"
+                          }`}
+                        >
+                          {isActive ? "Aktif Paket" : isUpgrade ? `${pkg.title} Paketine Yükselt` : `${pkg.title} Satın Al`}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -2785,14 +2805,27 @@ const addAlert = (coin, signal) => {
                       <span>%{Math.round(signal.probability || signal.score || 0)}</span>
                     </div>
 
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-blue-300 font-semibold">Para Giriş/Çıkış</span>
-                        <span>%{signal.moneyIn || 50} / %{signal.moneyOut || 50}</span>
+                    <div className="rounded-xl bg-slate-950/45 border border-cyan-300/10 p-2 shadow-inner shadow-cyan-500/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-blue-200 font-black tracking-wide">Para Akışı</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${(signal.moneyIn || 50) >= (signal.moneyOut || 50) ? "bg-emerald-400/20 text-emerald-200 border border-emerald-300/20" : "bg-red-400/20 text-red-200 border border-red-300/20"}`}>
+                          NET {(signal.moneyIn || 50) >= (signal.moneyOut || 50) ? "+" : "-"}{Math.abs((signal.moneyIn || 50) - (signal.moneyOut || 50))}
+                        </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-1 h-2">
-                        <div className="bg-emerald-400/30 rounded-full overflow-hidden"><div className="h-full bg-emerald-400" style={{ width: `${signal.moneyIn || 50}%` }} /></div>
-                        <div className="bg-red-400/30 rounded-full overflow-hidden"><div className="h-full bg-red-400" style={{ width: `${signal.moneyOut || 50}%` }} /></div>
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="rounded-lg bg-emerald-400/10 border border-emerald-300/15 px-2 py-1">
+                          <div className="text-[8px] text-emerald-200/80 font-black">GİRİŞ</div>
+                          <div className="text-sm font-black text-emerald-200">%{signal.moneyIn || 50}</div>
+                        </div>
+                        <div className="rounded-lg bg-red-400/10 border border-red-300/15 px-2 py-1 text-right">
+                          <div className="text-[8px] text-red-200/80 font-black">ÇIKIŞ</div>
+                          <div className="text-sm font-black text-red-200">%{signal.moneyOut || 50}</div>
+                        </div>
+                      </div>
+                      <div className="relative h-3 rounded-full overflow-hidden bg-slate-900 border border-white/10">
+                        <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-300 to-cyan-300" style={{ width: `${signal.moneyIn || 50}%` }} />
+                        <div className="absolute right-0 top-0 h-full bg-gradient-to-l from-red-300 to-fuchsia-300 opacity-80" style={{ width: `${signal.moneyOut || 50}%` }} />
+                        <div className="absolute left-1/2 top-0 h-full w-px bg-white/50" />
                       </div>
                     </div>
 
