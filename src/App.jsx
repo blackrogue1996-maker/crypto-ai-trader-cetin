@@ -2466,7 +2466,10 @@ const addAlert = (coin, signal) => {
                 <div
                   key={`${coin?.symbol || "coin"}-${index}`}
                   onClick={() => openCoin(coin)}
-                  title="Grafik ve detay için tıkla" className={`relative bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/10 shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:bg-white/5 hover:shadow-[0_0_25px_rgba(34,211,238,0.45)] ${
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openCoin(coin); }}
+                  role="button"
+                  tabIndex={0}
+                  title="Grafik ve detay için karta tıkla" className={`relative bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/10 shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:bg-white/5 hover:shadow-[0_0_25px_rgba(34,211,238,0.45)] ${
                     isLocked
                       ? "opacity-40 blur-sm pointer-events-none"
                       : favorites.includes(coin?.symbol)
@@ -2540,16 +2543,7 @@ const addAlert = (coin, signal) => {
                     <span>{signal.text}</span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openCoin(coin);
-                    }}
-                    className="mt-2 w-full rounded-xl bg-cyan-400/15 border border-cyan-300/25 px-3 py-2 text-xs font-black text-cyan-100 hover:bg-cyan-400/25 transition"
-                  >
-                    📈 Grafiği Aç
-                  </button>
+                  <div className="mt-2 text-[11px] text-cyan-200/80 font-bold">Grafik için karta tıkla</div>
 
                   <div className="mt-3 text-sm space-y-1">
                     <div className="flex justify-between">
