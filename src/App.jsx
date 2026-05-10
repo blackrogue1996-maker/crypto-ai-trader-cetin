@@ -2547,7 +2547,7 @@ const addAlert = (coin, signal) => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {[
               ...filteredCoins.slice(0, getCoinLimit()),
               ...(plan === "SERBEST" && bonusCoin ? [bonusCoin] : []),
@@ -2570,7 +2570,7 @@ const addAlert = (coin, signal) => {
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCoinCardOpen(e, coin); }}
                   role="button"
                   tabIndex={0}
-                  title="Coine tıkla: büyük grafik paneli açılır" className={`group relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-indigo-950/80 to-fuchsia-950/70 backdrop-blur-2xl rounded-[28px] p-4 border border-cyan-300/20 shadow-[0_18px_60px_rgba(8,13,40,0.65)] cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-[1.025] hover:border-cyan-300/70 hover:shadow-[0_0_45px_rgba(34,211,238,0.55)] ${
+                  title="Coine tıkla: büyük grafik paneli açılır" className={`group relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-indigo-950/80 to-fuchsia-950/70 backdrop-blur-2xl rounded-[28px] p-5 border border-cyan-300/20 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-start shadow-[0_18px_60px_rgba(8,13,40,0.65)] cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-[1.025] hover:border-cyan-300/70 hover:shadow-[0_0_45px_rgba(34,211,238,0.55)] ${
                     isLocked
                       ? "opacity-40 blur-sm pointer-events-none"
                       : favorites.includes(coin?.symbol)
@@ -2582,7 +2582,7 @@ const addAlert = (coin, signal) => {
                 >
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(34,211,238,0.22),transparent_32%),radial-gradient(circle_at_90%_0%,rgba(217,70,239,0.24),transparent_30%)] opacity-80 pointer-events-none" />
                   <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-400/10 blur-2xl group-hover:bg-cyan-300/25 transition-all" />
-                  <div className="relative flex justify-between items-start mb-4">
+                  <div className="relative flex justify-between items-start mb-4 lg:col-span-12">
                     <div>
                       <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] text-cyan-200 mb-2">
                         #{index + 1} CANLI TARANAN
@@ -2624,7 +2624,7 @@ const addAlert = (coin, signal) => {
 )}
                   </div>
 
-                  <div className="relative grid grid-cols-2 gap-3 mb-3">
+                  <div className="relative grid grid-cols-2 gap-3 mb-3 lg:col-span-4 lg:mb-0">
                     <div className="rounded-2xl bg-black/25 border border-white/10 p-3">
                       <p className="text-[11px] text-slate-400 uppercase">Anlık Fiyat</p>
                       <p className="text-2xl font-black">${formatPrice(price)}</p>
@@ -2638,7 +2638,7 @@ const addAlert = (coin, signal) => {
                     </div>
                   </div>
 
-                  <div className="relative my-3 h-24 rounded-2xl bg-black/30 border border-white/10 p-3 overflow-hidden shadow-inner">
+                  <div className="relative my-3 h-24 rounded-2xl lg:col-span-4 lg:my-0 lg:h-[170px] bg-black/30 border border-white/10 p-3 overflow-hidden shadow-inner">
                     <svg viewBox="0 0 110 60" className="w-full h-full">
                       <polyline
                         fill="none"
@@ -2653,7 +2653,7 @@ const addAlert = (coin, signal) => {
                   </div>
 
                   <div
-                    className={`relative flex items-center justify-between gap-2 mt-4 font-black ${signal.color} px-4 py-3 rounded-2xl animate-pulse shadow-[0_0_18px_rgba(34,211,238,0.45)] border border-white/10`}
+                    className={`relative flex items-center justify-between gap-2 mt-4 font-black lg:col-span-4 lg:mt-0 lg:h-full lg:min-h-[170px] lg:flex-col lg:items-start lg:justify-center ${signal.color} px-4 py-3 rounded-2xl animate-pulse shadow-[0_0_18px_rgba(34,211,238,0.45)] border border-white/10`}
                   >
                     <div className="flex items-center gap-2">
                       <SignalIcon size={20} />
@@ -2662,12 +2662,12 @@ const addAlert = (coin, signal) => {
                     <span className="text-xs bg-black/30 px-2 py-1 rounded-full">%{Math.round(signal.probability || signal.score || 0)}</span>
                   </div>
 
-                  <div className="relative mt-3 rounded-full h-2 bg-black/30 overflow-hidden border border-white/10">
+                  <div className="relative mt-3 rounded-full h-2 bg-black/30 lg:col-span-12 overflow-hidden border border-white/10">
                     <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400" style={{ width: `${Math.min(100, Math.max(4, signal.probability || signal.score || 0))}%` }} />
                   </div>
-                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
+                  <p className="relative mt-2 text-[11px] text-cyan-200 lg:col-span-12">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
 
-                  <div className="relative mt-3 text-sm space-y-2 rounded-2xl bg-black/20 border border-white/10 p-3">
+                  <div className="relative mt-3 text-sm space-y-2 rounded-2xl lg:col-span-6 bg-black/20 border border-white/10 p-3">
                     <div className="flex justify-between">
                       <span>Skor</span>
                       <span>{signal.score}/100</span>
@@ -2721,7 +2721,7 @@ const addAlert = (coin, signal) => {
                   </div>
 
                   {targets && (
-                    <div className="relative mt-4 bg-gradient-to-br from-black/40 to-cyan-950/20 border border-cyan-300/10 rounded-2xl p-3 text-sm space-y-2 shadow-inner">
+                    <div className="relative mt-4 bg-gradient-to-br from-black/40 to-cyan-950/20 lg:col-span-6 lg:mt-3 border border-cyan-300/10 rounded-2xl p-3 text-sm space-y-2 shadow-inner">
                       <div className="flex justify-between">
                         <span>İpucu</span>
                         <span className="font-bold">{signal.type}</span>
