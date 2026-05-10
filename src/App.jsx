@@ -1543,11 +1543,19 @@ const addAlert = (coin, signal) => {
 
   const openCoin = (coin) => {
     if (!coin?.symbol) return;
-    const selected = { ...coin };
-    try { localStorage.setItem("trader_selected_coin", selected.symbol); } catch {}
-    ensureSignalSnapshot(selected);
-    setSelectedCoin(selected);
+    try { localStorage.setItem("trader_selected_coin", coin.symbol); } catch {}
     try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+    ensureSignalSnapshot(coin);
+    setSelectedCoin({ ...coin });
+  };
+
+  const handleCoinCardOpen = (event, coin) => {
+    if (!coin?.symbol) return;
+    const target = event?.target;
+    if (target?.closest?.("button") || target?.closest?.("a") || target?.closest?.("select")) return;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    openCoin(coin);
   };
 
   const closeCoin = () => {
@@ -2451,7 +2459,7 @@ const addAlert = (coin, signal) => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
             {[
               ...filteredCoins.slice(0, getCoinLimit()),
               ...(plan === "SERBEST" && bonusCoin ? [bonusCoin] : []),
@@ -2467,24 +2475,14 @@ const addAlert = (coin, signal) => {
               return (
                 <div
                   key={`${coin?.symbol || "coin"}-${index}`}
-                  onClick={(e) => {
-                    if (e.target.closest("button")) return;
-                    e.preventDefault();
-                    openCoin(coin);
-                  }}
-                  onMouseUp={(e) => {
-                    if (e.button !== 0 || e.target.closest("button")) return;
-                    openCoin(coin);
-                  }}
-                  onTouchEnd={(e) => {
-                    if (e.target.closest("button")) return;
-                    openCoin(coin);
-                  }}
-                  onDoubleClick={(e) => { e.preventDefault(); openCoin(coin); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openCoin(coin); }}
+                  onClick={(e) => handleCoinCardOpen(e, coin)}
+                  onPointerUp={(e) => handleCoinCardOpen(e, coin)}
+                  onTouchEnd={(e) => handleCoinCardOpen(e, coin)}
+                  onDoubleClick={(e) => handleCoinCardOpen(e, coin)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCoinCardOpen(e, coin); }}
                   role="button"
                   tabIndex={0}
-                  title="Coine tıkla: grafik açılır" className={`relative bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/10 shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:bg-white/5 hover:shadow-[0_0_25px_rgba(34,211,238,0.45)] ${
+                  title="Coine tıkla: büyük grafik paneli açılır" className={`group relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-indigo-950/80 to-fuchsia-950/70 backdrop-blur-2xl rounded-[28px] p-4 border border-cyan-300/20 shadow-[0_18px_60px_rgba(8,13,40,0.65)] cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-[1.025] hover:border-cyan-300/70 hover:shadow-[0_0_45px_rgba(34,211,238,0.55)] ${
                     isLocked
                       ? "opacity-40 blur-sm pointer-events-none"
                       : favorites.includes(coin?.symbol)
@@ -2494,26 +2492,34 @@ const addAlert = (coin, signal) => {
                     }`}
                 
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-2xl font-bold">
-                      {(coin?.symbol || "BTCUSDT").replace("USDT", "")}
-                    </h2>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(34,211,238,0.22),transparent_32%),radial-gradient(circle_at_90%_0%,rgba(217,70,239,0.24),transparent_30%)] opacity-80 pointer-events-none" />
+                  <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-400/10 blur-2xl group-hover:bg-cyan-300/25 transition-all" />
+                  <div className="relative flex justify-between items-start mb-4">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] text-cyan-200 mb-2">
+                        #{index + 1} CANLI TARANAN
+                      </div>
+                      <h2 className="text-3xl font-black tracking-tight leading-none">
+                        {(coin?.symbol || "BTCUSDT").replace("USDT", "")}
+                      </h2>
+                      <p className="text-xs text-slate-300 mt-1">USDT · Güçlendirilmiş AI sinyal</p>
+                    </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-300">/USDT</span>
+                      <span className="text-xs px-2 py-1 rounded-full bg-black/30 border border-white/10 text-gray-200">/USDT</span>
 
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFavorite(coin?.symbol);
                         }}
-                        className="hover:scale-125 transition-transform"
+                        className="relative z-10 hover:scale-125 transition-transform"
                       >
                         <Star
                           className={
                             favorites.includes(coin?.symbol)
-                              ? "text-yellow-400 fill-yellow-400"
-                              : "text-gray-400"
+                              ? "text-yellow-400 fill-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]"
+                              : "text-gray-300"
                           }
                         />
                       </button>
@@ -2530,14 +2536,21 @@ const addAlert = (coin, signal) => {
 )}
                   </div>
 
-                  <p className="text-2xl font-semibold mb-2">${formatPrice(price)}</p>
+                  <div className="relative grid grid-cols-2 gap-3 mb-3">
+                    <div className="rounded-2xl bg-black/25 border border-white/10 p-3">
+                      <p className="text-[11px] text-slate-400 uppercase">Anlık Fiyat</p>
+                      <p className="text-2xl font-black">${formatPrice(price)}</p>
+                    </div>
+                    <div className="rounded-2xl bg-black/25 border border-white/10 p-3 text-right">
+                      <p className="text-[11px] text-slate-400 uppercase">24s Değişim</p>
+                      <p className={change >= 0 ? "text-green-400 text-xl font-black" : "text-red-400 text-xl font-black"}>
+                        {change >= 0 ? "+" : ""}
+                        {change.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
 
-                  <p className={change >= 0 ? "text-green-400" : "text-red-400"}>
-                    {change >= 0 ? "+" : ""}
-                    {change.toFixed(2)}%
-                  </p>
-
-                  <div className="my-3 h-16 rounded-xl bg-black/20 p-2 overflow-hidden">
+                  <div className="relative my-3 h-24 rounded-2xl bg-black/30 border border-white/10 p-3 overflow-hidden shadow-inner">
                     <svg viewBox="0 0 110 60" className="w-full h-full">
                       <polyline
                         fill="none"
@@ -2552,14 +2565,21 @@ const addAlert = (coin, signal) => {
                   </div>
 
                   <div
-                    className={`flex items-center gap-2 mt-3 font-semibold ${signal.color} px-3 py-2 rounded-xl animate-pulse shadow-[0_0_10px_rgba(34,211,238,0.5)]`}
+                    className={`relative flex items-center justify-between gap-2 mt-4 font-black ${signal.color} px-4 py-3 rounded-2xl animate-pulse shadow-[0_0_18px_rgba(34,211,238,0.45)] border border-white/10`}
                   >
-                    <SignalIcon size={18} />
-                    <span>{signal.text}</span>
+                    <div className="flex items-center gap-2">
+                      <SignalIcon size={20} />
+                      <span>{signal.text}</span>
+                    </div>
+                    <span className="text-xs bg-black/30 px-2 py-1 rounded-full">%{Math.round(signal.probability || signal.score || 0)}</span>
                   </div>
 
+                  <div className="relative mt-3 rounded-full h-2 bg-black/30 overflow-hidden border border-white/10">
+                    <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400" style={{ width: `${Math.min(100, Math.max(4, signal.probability || signal.score || 0))}%` }} />
+                  </div>
+                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
 
-                  <div className="mt-3 text-sm space-y-1">
+                  <div className="relative mt-3 text-sm space-y-2 rounded-2xl bg-black/20 border border-white/10 p-3">
                     <div className="flex justify-between">
                       <span>Skor</span>
                       <span>{signal.score}/100</span>
@@ -2570,9 +2590,15 @@ const addAlert = (coin, signal) => {
                       <span>%{Math.round(signal.probability || signal.score || 0)}</span>
                     </div>
 
-                    <div className="flex justify-between">
-                      <span className="text-blue-300 font-semibold">Para Giriş/Çıkış</span>
-                      <span>%{signal.moneyIn || 50} / %{signal.moneyOut || 50}</span>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-blue-300 font-semibold">Para Giriş/Çıkış</span>
+                        <span>%{signal.moneyIn || 50} / %{signal.moneyOut || 50}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 h-2">
+                        <div className="bg-emerald-400/30 rounded-full overflow-hidden"><div className="h-full bg-emerald-400" style={{ width: `${signal.moneyIn || 50}%` }} /></div>
+                        <div className="bg-red-400/30 rounded-full overflow-hidden"><div className="h-full bg-red-400" style={{ width: `${signal.moneyOut || 50}%` }} /></div>
+                      </div>
                     </div>
 
                     <div className="flex justify-between">
@@ -2607,7 +2633,7 @@ const addAlert = (coin, signal) => {
                   </div>
 
                   {targets && (
-                    <div className="mt-4 bg-black/30 rounded-xl p-3 text-sm space-y-2">
+                    <div className="relative mt-4 bg-gradient-to-br from-black/40 to-cyan-950/20 border border-cyan-300/10 rounded-2xl p-3 text-sm space-y-2 shadow-inner">
                       <div className="flex justify-between">
                         <span>İpucu</span>
                         <span className="font-bold">{signal.type}</span>
@@ -2647,7 +2673,7 @@ const addAlert = (coin, signal) => {
       </div>
 
       {selectedCoin && (
-        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white overflow-y-auto">
           <div className="sticky top-0 z-20 bg-slate-950/90 backdrop-blur-xl border-b border-white/10 px-5 py-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
