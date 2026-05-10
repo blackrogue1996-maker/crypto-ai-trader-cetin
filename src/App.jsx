@@ -116,7 +116,7 @@ const firebaseLoginWithEmail = async (email, password) => {
 const GM_USERNAME = "Gm54";
 const GM_PASSWORD = "0956711996";
 const DEFAULT_USERS = [
-  { username: GM_USERNAME, password: GM_PASSWORD, name: "GM Yönetici", email: "gm54@traderpro.com", role: "GM", package: "ULTRA", expiresAt: "2099-12-31T23:59:59.000Z", status: "active" },
+  { username: GM_USERNAME, password: GM_PASSWORD, name: "Crypto AI Trader Pro", email: "support@cryptoaitraderpro.com", role: "GM", package: "ULTRA", expiresAt: "2099-12-31T23:59:59.000Z", status: "active" },
 ];
 
 const readJson = (key, fallback) => {
@@ -2281,10 +2281,10 @@ const addAlert = (coin, signal) => {
   </div>
 )}
         <div className="text-center text-cyan-200 font-black tracking-[0.38em] text-sm mb-2 uppercase">
-          KRIPTO AI Trader
+          CRYPTO AI TRADER PRO
         </div>
         <h1 className="text-5xl font-black text-center mb-2">
-          Kripto Y.Z Pro Çetin
+          Crypto AI Trader Pro Çetin
         </h1>
 
         <p className="text-center text-slate-400 mb-8">
@@ -2299,7 +2299,7 @@ const addAlert = (coin, signal) => {
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{String(currentUser.role).toUpperCase() === "GM" ? "GM YÖNETİCİ" : currentUser.viewedByGM ? "GM ÖNİZLEME" : "KULLANICI"}</div>
                   <div className="text-white font-black leading-tight">{currentUser.name}</div>
-                  <div className="text-xs text-slate-400">{currentUser.email}</div>
+                  <div className="text-xs text-slate-400">{String(currentUser.role).toUpperCase() === "GM" ? "Crypto AI Trader Pro Çetin" : `Üye ID: ${currentUser.username || "kullanici"}`}</div>
                 </div>
               </div>
 
