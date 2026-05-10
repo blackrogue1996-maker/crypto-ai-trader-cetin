@@ -1544,7 +1544,6 @@ const addAlert = (coin, signal) => {
   const openCoin = (coin) => {
     if (!coin?.symbol) return;
     try { localStorage.setItem("trader_selected_coin", coin.symbol); } catch {}
-    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
     ensureSignalSnapshot(coin);
     setSelectedCoin({ ...coin });
   };
@@ -1557,28 +1556,6 @@ const addAlert = (coin, signal) => {
     event?.stopPropagation?.();
     openCoin(coin);
   };
-
-  // KESİN ÇÖZÜM: Kartın neresine basılırsa basılsın eski büyük grafik ekranını aç.
-  // React click kaçarsa bile document seviyesinde yakalar.
-  useEffect(() => {
-    const openFromCard = (event) => {
-      const card = event?.target?.closest?.("[data-open-coin-symbol]");
-      if (!card) return;
-      const symbol = card.getAttribute("data-open-coin-symbol");
-      if (!symbol) return;
-      const coin = coins.find((item) => String(item?.symbol) === String(symbol));
-      if (!coin) return;
-      event?.preventDefault?.();
-      openCoin(coin);
-    };
-
-    document.addEventListener("click", openFromCard, true);
-    document.addEventListener("touchend", openFromCard, true);
-    return () => {
-      document.removeEventListener("click", openFromCard, true);
-      document.removeEventListener("touchend", openFromCard, true);
-    };
-  }, [coins]);
 
   const closeCoin = () => {
     try { localStorage.removeItem("trader_selected_coin"); } catch {}
@@ -2136,6 +2113,95 @@ const addAlert = (coin, signal) => {
     );
   }
 
+  if (selectedCoin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+        <div className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-cyan-400/20 px-4 py-3">
+          <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={closeCoin}
+                className="h-11 w-11 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-2xl font-black"
+                title="Kartlara dön"
+              >
+                ←
+              </button>
+              <div>
+                <div className="text-xs text-cyan-300 font-black tracking-[0.25em]">CANLI TREND GRAFİĞİ</div>
+                <h1 className="text-2xl md:text-4xl font-black leading-tight">
+                  {(selectedCoin?.symbol || "BTCUSDT").replace("USDT", "")}/USDT
+                </h1>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl md:text-4xl font-black">${formatPrice(selectedPrice)}</div>
+              <div className={selectedChange >= 0 ? "text-emerald-300 font-black" : "text-rose-300 font-black"}>
+                {selectedChange >= 0 ? "+" : ""}{selectedChange.toFixed(2)}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4">
+          <div className="rounded-[28px] overflow-hidden border border-cyan-400/25 bg-black shadow-[0_0_60px_rgba(34,211,238,0.18)] min-h-[760px]">
+            <iframe
+              title={`${selectedCoin?.symbol || "BTCUSDT"} canlı grafik`}
+              src={`https://s.tradingview.com/widgetembed/?symbol=BINANCE:${selectedCoin?.symbol || "BTCUSDT"}&interval=15&theme=dark&style=1&locale=tr&toolbar_bg=%230f172a&enable_publishing=false&hide_top_toolbar=false&hide_legend=false&save_image=false`}
+              width="100%"
+              height="760"
+              frameBorder="0"
+              allowFullScreen
+            />
+          </div>
+
+          <div className="space-y-4">
+            <div className={`rounded-[28px] p-5 border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-2xl ${selectedSignal?.color || ""}`}>
+              <div className="text-xs text-white/70 font-black tracking-[0.2em]">SİNYAL PANELİ</div>
+              <div className="mt-2 flex items-center justify-between">
+                <div className="text-3xl font-black">{selectedSignal?.text || "BEKLE"}</div>
+                <div className="rounded-2xl bg-black/35 px-4 py-2 text-2xl font-black">% {safeNumber(selectedSignal?.score, 50)}</div>
+              </div>
+              <div className="mt-4 h-3 rounded-full bg-black/30 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-fuchsia-300" style={{ width: `${Math.max(5, Math.min(100, safeNumber(selectedSignal?.score, 50)))}%` }} />
+              </div>
+            </div>
+
+            <div className="rounded-[28px] p-5 border border-white/10 bg-white/10 backdrop-blur-xl">
+              <div className="text-lg font-black mb-3">📌 Ticaret Planı</div>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between"><span>Giriş</span><b>${formatPrice(selectedTargets?.entry || selectedPrice)}</b></div>
+                <div className="flex justify-between text-emerald-300"><span>TP1</span><b>${formatPrice(selectedTargets?.tp1 || selectedPrice * 1.01)}</b></div>
+                <div className="flex justify-between text-emerald-300"><span>TP2</span><b>${formatPrice(selectedTargets?.tp2 || selectedPrice * 1.02)}</b></div>
+                <div className="flex justify-between text-emerald-300"><span>TP3</span><b>${formatPrice(selectedTargets?.tp3 || selectedPrice * 1.03)}</b></div>
+                <div className="flex justify-between text-rose-300"><span>Stop Loss</span><b>${formatPrice(selectedTargets?.sl || selectedPrice * 0.99)}</b></div>
+              </div>
+            </div>
+
+            <div className="rounded-[28px] p-5 border border-white/10 bg-white/10 backdrop-blur-xl">
+              <div className="text-lg font-black mb-3">🧠 AI Analiz</div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl bg-black/25 p-3"><div className="text-slate-400">RSI</div><b>{safeNumber(selectedSignal?.rsi, 50)}</b></div>
+                <div className="rounded-2xl bg-black/25 p-3"><div className="text-slate-400">MACD</div><b>{safeNumber(selectedSignal?.macd, 0).toFixed(2)}</b></div>
+                <div className="rounded-2xl bg-black/25 p-3"><div className="text-slate-400">EMA</div><b>${formatPrice(selectedSignal?.ema || selectedPrice)}</b></div>
+                <div className="rounded-2xl bg-black/25 p-3"><div className="text-slate-400">Hacim</div><b>{safeNumber(selectedCoin?.quoteVolume).toLocaleString()}</b></div>
+              </div>
+              <div className="mt-4 rounded-2xl bg-black/25 p-3 text-sm text-slate-200">
+                Trend/Haber: <b>{selectedSignal?.newsBias || selectedSignal?.trendText || "ALICI YOĞUN - NÖTR"}</b>
+              </div>
+            </div>
+
+            <button
+              onClick={closeCoin}
+              className="w-full rounded-2xl bg-cyan-300 text-slate-950 py-4 font-black hover:scale-[1.01] transition"
+            >
+              Kartlara Geri Dön
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white p-6">
       <div className="absolute top-3 right-4 text-[11px] text-white/80 bg-black/30 px-3 py-2 rounded-lg border border-white/10">
@@ -2497,9 +2563,6 @@ const addAlert = (coin, signal) => {
               return (
                 <div
                   key={`${coin?.symbol || "coin"}-${index}`}
-                  data-open-coin-symbol={coin?.symbol || ""}
-                  onMouseDownCapture={() => openCoin(coin)}
-                  onClickCapture={(e) => handleCoinCardOpen(e, coin)}
                   onClick={(e) => handleCoinCardOpen(e, coin)}
                   onPointerUp={(e) => handleCoinCardOpen(e, coin)}
                   onTouchEnd={(e) => handleCoinCardOpen(e, coin)}
@@ -2602,7 +2665,7 @@ const addAlert = (coin, signal) => {
                   <div className="relative mt-3 rounded-full h-2 bg-black/30 overflow-hidden border border-white/10">
                     <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400" style={{ width: `${Math.min(100, Math.max(4, signal.probability || signal.score || 0))}%` }} />
                   </div>
-                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik ekranı için coine tıkla</p>
+                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
 
                   <div className="relative mt-3 text-sm space-y-2 rounded-2xl bg-black/20 border border-white/10 p-3">
                     <div className="flex justify-between">
