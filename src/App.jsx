@@ -1764,7 +1764,7 @@ const addAlert = (coin, signal) => {
                 <div key={title} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${grad} p-5 shadow-xl`}>
                   <div className="text-3xl">{icon}</div>
                   <div className="text-slate-300 text-xs font-bold mt-3 uppercase tracking-wider">{title}</div>
-                  <div className="text-3xl font-black mt-1">{value}</div>
+                  <div className="text-lg font-black mt-1">{value}</div>
                 </div>
               ))}
             </div>
@@ -1780,7 +1780,7 @@ const addAlert = (coin, signal) => {
             <div className="rounded-[30px] border border-white/10 bg-black/35 backdrop-blur-2xl p-5 shadow-2xl shadow-cyan-500/10 h-fit">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-black">Kullanıcı Oluştur</h2>
+                  <h2 className="text-lg font-black">Kullanıcı Oluştur</h2>
                   <p className="text-xs text-slate-400 mt-1">Manuel kullanıcı ekle, paket ata.</p>
                 </div>
                 <div className="h-12 w-12 rounded-2xl bg-cyan-300/20 grid place-items-center text-2xl">➕</div>
@@ -1805,7 +1805,7 @@ const addAlert = (coin, signal) => {
             <div className="rounded-[30px] border border-white/10 bg-black/35 backdrop-blur-2xl p-5 shadow-2xl shadow-fuchsia-500/10 overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-2xl font-black">Kullanıcı Yönetimi</h2>
+                  <h2 className="text-lg font-black">Kullanıcı Yönetimi</h2>
                   <p className="text-xs text-slate-400 mt-1">Kayıt olan kullanıcılar burada görünür. Paketleri tek tıkla değiştir.</p>
                 </div>
                 <input
@@ -1913,7 +1913,7 @@ const addAlert = (coin, signal) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs tracking-[0.25em] text-cyan-200 font-black">MARKET RADAR</div>
-                    <div className="text-2xl font-black mt-1">Canlı Piyasa</div>
+                    <div className="text-lg font-black mt-1">Canlı Piyasa</div>
                   </div>
                   <div className="h-12 w-12 rounded-2xl bg-cyan-400/20 border border-cyan-300/30 flex items-center justify-center text-2xl">📈</div>
                 </div>
@@ -2076,7 +2076,7 @@ const addAlert = (coin, signal) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs tracking-[0.25em] text-fuchsia-200 font-black">PREMIUM SİSTEM</div>
-                    <div className="text-2xl font-black mt-1">Avantajlar</div>
+                    <div className="text-lg font-black mt-1">Avantajlar</div>
                   </div>
                   <div className="h-12 w-12 rounded-2xl bg-fuchsia-400/20 border border-fuchsia-300/30 flex items-center justify-center text-2xl">🚀</div>
                 </div>
@@ -2121,7 +2121,7 @@ const addAlert = (coin, signal) => {
             <div className="flex items-center gap-3">
               <button
                 onClick={closeCoin}
-                className="h-11 w-11 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-2xl font-black"
+                className="h-11 w-11 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-lg font-black"
                 title="Kartlara dön"
               >
                 ←
@@ -2158,8 +2158,8 @@ const addAlert = (coin, signal) => {
             <div className={`rounded-[28px] p-5 border border-white/10 bg-gradient-to-br from-white/10 to-white/5 shadow-2xl ${selectedSignal?.color || ""}`}>
               <div className="text-xs text-white/70 font-black tracking-[0.2em]">SİNYAL PANELİ</div>
               <div className="mt-2 flex items-center justify-between">
-                <div className="text-3xl font-black">{selectedSignal?.text || "BEKLE"}</div>
-                <div className="rounded-2xl bg-black/35 px-4 py-2 text-2xl font-black">% {safeNumber(selectedSignal?.score, 50)}</div>
+                <div className="text-lg font-black">{selectedSignal?.text || "BEKLE"}</div>
+                <div className="rounded-2xl bg-black/35 px-4 py-2 text-lg font-black">% {safeNumber(selectedSignal?.score, 50)}</div>
               </div>
               <div className="mt-4 h-3 rounded-full bg-black/30 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-fuchsia-300" style={{ width: `${Math.max(5, Math.min(100, safeNumber(selectedSignal?.score, 50)))}%` }} />
@@ -2264,11 +2264,11 @@ const addAlert = (coin, signal) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[11px] text-slate-400 font-bold">AKTİF PAKET</div>
-                    <div className="text-2xl font-black text-cyan-300">{activeSubscription.plan}</div>
+                    <div className="text-lg font-black text-cyan-300">{activeSubscription.plan}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[11px] text-slate-400 font-bold">KALAN</div>
-                    <div className="text-xl font-black text-white">
+                    <div className="text-lg font-black text-white">
                       {activeSubscription.plan === "SERBEST" ? "—" : `${getRemainingDays(activeSubscription.expiresAt)} gün`}
                     </div>
                   </div>
@@ -2327,7 +2327,7 @@ const addAlert = (coin, signal) => {
                   <div className="inline-flex items-center gap-2 rounded-full bg-yellow-400/15 border border-yellow-300/25 px-3 py-1 text-[11px] text-yellow-200 font-black">
                     💳 ÖDEME / ÜYELİK DEMOSU
                   </div>
-                  <h2 className="text-3xl font-black mt-2">30 Günlük Premium Paketler</h2>
+                  <h2 className="text-lg font-black mt-2">30 Günlük Premium Paketler</h2>
                   <p className="text-sm text-slate-300 mt-1">Satın al demo. Gerçek sistemde bu buton iyzico ödeme sayfasını açacak.</p>
                 </div>
                 <button
@@ -2361,7 +2361,7 @@ const addAlert = (coin, signal) => {
                       <div className="flex items-start justify-between gap-2 mt-1">
                         <div>
                           <div className="text-lg font-black text-white">{pkg.title}</div>
-                          <div className="text-3xl font-black text-cyan-300 mt-1">₺{pkg.price.toLocaleString("tr-TR")}</div>
+                          <div className="text-lg font-black text-cyan-300 mt-1">₺{pkg.price.toLocaleString("tr-TR")}</div>
                           <div className="text-xs text-slate-400">{pkg.days} gün kullanım</div>
                         </div>
                         <div className="h-10 w-10 rounded-2xl bg-cyan-400/10 border border-cyan-300/20 flex items-center justify-center text-lg">
@@ -2538,7 +2538,7 @@ const addAlert = (coin, signal) => {
           })()}
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div
                 key={i}
@@ -2547,7 +2547,7 @@ const addAlert = (coin, signal) => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {[
               ...filteredCoins.slice(0, getCoinLimit()),
               ...(plan === "SERBEST" && bonusCoin ? [bonusCoin] : []),
@@ -2570,7 +2570,7 @@ const addAlert = (coin, signal) => {
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCoinCardOpen(e, coin); }}
                   role="button"
                   tabIndex={0}
-                  title="Coine tıkla: büyük grafik paneli açılır" className={`group relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-indigo-950/80 to-fuchsia-950/70 backdrop-blur-2xl rounded-[28px] p-5 border border-cyan-300/20 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-start shadow-[0_18px_60px_rgba(8,13,40,0.65)] cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-[1.025] hover:border-cyan-300/70 hover:shadow-[0_0_45px_rgba(34,211,238,0.55)] ${
+                  title="Coine tıkla: büyük grafik paneli açılır" className={`group relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-indigo-950/80 to-fuchsia-950/70 backdrop-blur-2xl rounded-[26px] p-4 border border-cyan-300/20 shadow-[0_18px_60px_rgba(8,13,40,0.65)] cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:scale-[1.025] hover:border-cyan-300/70 hover:shadow-[0_0_45px_rgba(34,211,238,0.55)] ${
                     isLocked
                       ? "opacity-40 blur-sm pointer-events-none"
                       : favorites.includes(coin?.symbol)
@@ -2582,12 +2582,12 @@ const addAlert = (coin, signal) => {
                 >
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(34,211,238,0.22),transparent_32%),radial-gradient(circle_at_90%_0%,rgba(217,70,239,0.24),transparent_30%)] opacity-80 pointer-events-none" />
                   <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-400/10 blur-2xl group-hover:bg-cyan-300/25 transition-all" />
-                  <div className="relative flex justify-between items-start mb-4 lg:col-span-12">
+                  <div className="relative flex justify-between items-start mb-4">
                     <div>
                       <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] text-cyan-200 mb-2">
                         #{index + 1} CANLI TARANAN
                       </div>
-                      <h2 className="text-3xl font-black tracking-tight leading-none">
+                      <h2 className="text-lg font-black tracking-tight leading-none">
                         {(coin?.symbol || "BTCUSDT").replace("USDT", "")}
                       </h2>
                       <p className="text-xs text-slate-300 mt-1">USDT · Güçlendirilmiş AI sinyal</p>
@@ -2624,21 +2624,21 @@ const addAlert = (coin, signal) => {
 )}
                   </div>
 
-                  <div className="relative grid grid-cols-2 gap-3 mb-3 lg:col-span-4 lg:mb-0">
+                  <div className="relative grid grid-cols-2 gap-3 mb-3">
                     <div className="rounded-2xl bg-black/25 border border-white/10 p-3">
                       <p className="text-[11px] text-slate-400 uppercase">Anlık Fiyat</p>
-                      <p className="text-2xl font-black">${formatPrice(price)}</p>
+                      <p className="text-lg font-black">${formatPrice(price)}</p>
                     </div>
                     <div className="rounded-2xl bg-black/25 border border-white/10 p-3 text-right">
                       <p className="text-[11px] text-slate-400 uppercase">24s Değişim</p>
-                      <p className={change >= 0 ? "text-green-400 text-xl font-black" : "text-red-400 text-xl font-black"}>
+                      <p className={change >= 0 ? "text-green-400 text-lg font-black" : "text-red-400 text-lg font-black"}>
                         {change >= 0 ? "+" : ""}
                         {change.toFixed(2)}%
                       </p>
                     </div>
                   </div>
 
-                  <div className="relative my-3 h-24 rounded-2xl lg:col-span-4 lg:my-0 lg:h-[170px] bg-black/30 border border-white/10 p-3 overflow-hidden shadow-inner">
+                  <div className="relative my-3 h-20 rounded-2xl bg-black/30 border border-white/10 p-3 overflow-hidden shadow-inner">
                     <svg viewBox="0 0 110 60" className="w-full h-full">
                       <polyline
                         fill="none"
@@ -2653,7 +2653,7 @@ const addAlert = (coin, signal) => {
                   </div>
 
                   <div
-                    className={`relative flex items-center justify-between gap-2 mt-4 font-black lg:col-span-4 lg:mt-0 lg:h-full lg:min-h-[170px] lg:flex-col lg:items-start lg:justify-center ${signal.color} px-4 py-3 rounded-2xl animate-pulse shadow-[0_0_18px_rgba(34,211,238,0.45)] border border-white/10`}
+                    className={`relative flex items-center justify-between gap-2 mt-3 font-black lg:flex-col lg:items-start lg:justify-center ${signal.color} px-3 py-2 rounded-2xl animate-pulse shadow-[0_0_18px_rgba(34,211,238,0.45)] border border-white/10`}
                   >
                     <div className="flex items-center gap-2">
                       <SignalIcon size={20} />
@@ -2662,12 +2662,12 @@ const addAlert = (coin, signal) => {
                     <span className="text-xs bg-black/30 px-2 py-1 rounded-full">%{Math.round(signal.probability || signal.score || 0)}</span>
                   </div>
 
-                  <div className="relative mt-3 rounded-full h-2 bg-black/30 lg:col-span-12 overflow-hidden border border-white/10">
+                  <div className="relative mt-3 rounded-full h-2 bg-black/30 overflow-hidden border border-white/10">
                     <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400" style={{ width: `${Math.min(100, Math.max(4, signal.probability || signal.score || 0))}%` }} />
                   </div>
-                  <p className="relative mt-2 text-[11px] text-cyan-200 lg:col-span-12">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
+                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
 
-                  <div className="relative mt-3 text-sm space-y-2 rounded-2xl lg:col-span-6 bg-black/20 border border-white/10 p-3">
+                  <div className="relative mt-3 text-xs space-y-1.5 rounded-2xl bg-black/20 border border-white/10 p-3">
                     <div className="flex justify-between">
                       <span>Skor</span>
                       <span>{signal.score}/100</span>
@@ -2721,7 +2721,7 @@ const addAlert = (coin, signal) => {
                   </div>
 
                   {targets && (
-                    <div className="relative mt-4 bg-gradient-to-br from-black/40 to-cyan-950/20 lg:col-span-6 lg:mt-3 border border-cyan-300/10 rounded-2xl p-3 text-sm space-y-2 shadow-inner">
+                    <div className="relative mt-4 bg-gradient-to-br from-black/40 to-cyan-950/20 border border-cyan-300/10 rounded-2xl p-3 text-xs space-y-1.5 shadow-inner">
                       <div className="flex justify-between">
                         <span>İpucu</span>
                         <span className="font-bold">{signal.type}</span>
@@ -3070,7 +3070,7 @@ const addAlert = (coin, signal) => {
             <div className="space-y-5">
               <div className="bg-white/10 border border-white/10 rounded-3xl p-5">
                 <div
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-lg ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-2xl font-bold text-lg ${
                     selectedSignal.score >= 70
                       ? "text-green-400 bg-green-500/20 border border-green-500/30"
                       : selectedSignal.score >= 40
