@@ -1558,6 +1558,28 @@ const addAlert = (coin, signal) => {
     openCoin(coin);
   };
 
+  // KESİN ÇÖZÜM: Kartın neresine basılırsa basılsın eski büyük grafik ekranını aç.
+  // React click kaçarsa bile document seviyesinde yakalar.
+  useEffect(() => {
+    const openFromCard = (event) => {
+      const card = event?.target?.closest?.("[data-open-coin-symbol]");
+      if (!card) return;
+      const symbol = card.getAttribute("data-open-coin-symbol");
+      if (!symbol) return;
+      const coin = coins.find((item) => String(item?.symbol) === String(symbol));
+      if (!coin) return;
+      event?.preventDefault?.();
+      openCoin(coin);
+    };
+
+    document.addEventListener("click", openFromCard, true);
+    document.addEventListener("touchend", openFromCard, true);
+    return () => {
+      document.removeEventListener("click", openFromCard, true);
+      document.removeEventListener("touchend", openFromCard, true);
+    };
+  }, [coins]);
+
   const closeCoin = () => {
     try { localStorage.removeItem("trader_selected_coin"); } catch {}
     setSelectedCoin(null);
@@ -2475,6 +2497,9 @@ const addAlert = (coin, signal) => {
               return (
                 <div
                   key={`${coin?.symbol || "coin"}-${index}`}
+                  data-open-coin-symbol={coin?.symbol || ""}
+                  onMouseDownCapture={() => openCoin(coin)}
+                  onClickCapture={(e) => handleCoinCardOpen(e, coin)}
                   onClick={(e) => handleCoinCardOpen(e, coin)}
                   onPointerUp={(e) => handleCoinCardOpen(e, coin)}
                   onTouchEnd={(e) => handleCoinCardOpen(e, coin)}
@@ -2577,7 +2602,7 @@ const addAlert = (coin, signal) => {
                   <div className="relative mt-3 rounded-full h-2 bg-black/30 overflow-hidden border border-white/10">
                     <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400" style={{ width: `${Math.min(100, Math.max(4, signal.probability || signal.score || 0))}%` }} />
                   </div>
-                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik + trend paneli için kartın herhangi bir yerine tıkla</p>
+                  <p className="relative mt-2 text-[11px] text-cyan-200">Grafik ekranı için coine tıkla</p>
 
                   <div className="relative mt-3 text-sm space-y-2 rounded-2xl bg-black/20 border border-white/10 p-3">
                     <div className="flex justify-between">
