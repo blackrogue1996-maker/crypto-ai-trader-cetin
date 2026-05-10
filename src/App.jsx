@@ -80,6 +80,38 @@ const getSignalRequiredPackage = (signal = {}) => {
 };
 
 
+
+const getFirebaseApiKey = () =>
+  import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDLL9Mm3YagSM7lCE9tZxP_QhpgcynbGBM";
+
+const firebaseSignUpWithEmail = async (email, password) => {
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${getFirebaseApiKey()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error?.message || "SIGNUP_ERROR");
+  return data;
+};
+
+const firebaseLoginWithEmail = async (email, password) => {
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${getFirebaseApiKey()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error?.message || "LOGIN_ERROR");
+  return data;
+};
+
 const GM_USERNAME = "Gm54";
 const GM_PASSWORD = "0956711996";
 const DEFAULT_USERS = [
@@ -1208,7 +1240,7 @@ const addAlert = (coin, signal) => {
   };
 
 
-  const handleAuthDemo = () => {
+  const handleAuthDemo = async () => {
     const username = authUsername.trim();
     const password = authPassword.trim();
     const email = authEmail.trim();
@@ -1237,6 +1269,18 @@ const addAlert = (coin, signal) => {
       if (exists) {
         setAuthMessage("Bu kullanıcı zaten kayıtlı. Giriş yapabilirsin.");
         return;
+      }
+
+      try {
+        await firebaseSignUpWithEmail(email, password);
+      } catch (error) {
+        const code = String(error?.message || "");
+        if (!code.includes("EMAIL_EXISTS")) {
+          if (code.includes("INVALID_EMAIL")) setAuthMessage("E-posta adresi geçersiz.");
+          else if (code.includes("WEAK_PASSWORD")) setAuthMessage("Şifre en az 6 karakter olmalı.");
+          else setAuthMessage(`Firebase kayıt hatası: ${code}`);
+          return;
+        }
       }
 
       const newUser = normalizeUser({
@@ -1270,7 +1314,7 @@ const addAlert = (coin, signal) => {
       return;
     }
 
-    const foundUser = demoUsers.find(
+    let foundUser = demoUsers.find(
       (user) =>
         (String(user.username).toLowerCase() === username.toLowerCase() || String(user.email || "").toLowerCase() === username.toLowerCase()) &&
         String(user.password) === password &&
@@ -1278,14 +1322,44 @@ const addAlert = (coin, signal) => {
     );
 
     if (!foundUser) {
-      setAuthMessage("Hatalı kullanıcı adı veya şifre.");
-      return;
+      const candidateUser = demoUsers.find(
+        (user) =>
+          (String(user.username).toLowerCase() === username.toLowerCase() || String(user.email || "").toLowerCase() === username.toLowerCase()) &&
+          user.status !== "blocked"
+      );
+
+      const loginEmail = candidateUser?.email || (username.includes("@") ? username : "");
+
+      if (loginEmail) {
+        try {
+          await firebaseLoginWithEmail(loginEmail, password);
+          foundUser = normalizeUser({
+            ...(candidateUser || {}),
+            username: candidateUser?.username || loginEmail.split("@")[0],
+            email: loginEmail,
+            password,
+            role: candidateUser?.role || "user",
+            package: candidateUser?.package || "SERBEST",
+            status: "active",
+          });
+        } catch (error) {
+          setAuthMessage("Hatalı kullanıcı adı/e-posta veya şifre.");
+          return;
+        }
+      } else {
+        setAuthMessage("Hatalı kullanıcı adı veya şifre.");
+        return;
+      }
     }
 
-    const normalized = normalizeUser({ ...foundUser, lastLoginAt: new Date().toISOString() });
-    setDemoUsers((prev) => prev.map((u) =>
-      String(u.username).toLowerCase() === String(normalized.username).toLowerCase() ? normalized : u
-    ));
+    const normalized = normalizeUser({ ...foundUser, password, lastLoginAt: new Date().toISOString() });
+    setDemoUsers((prev) => {
+      const exists = prev.some((u) => String(u.username).toLowerCase() === String(normalized.username).toLowerCase());
+      if (!exists) return [...prev, normalized];
+      return prev.map((u) =>
+        String(u.username).toLowerCase() === String(normalized.username).toLowerCase() ? normalized : u
+      );
+    });
     setCurrentUser(normalized);
 
     try {
@@ -1322,7 +1396,7 @@ const addAlert = (coin, signal) => {
       return;
     }
 
-    const firebaseApiKey = import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDLL9Mm3YagSM7lCE9tZxP_QhpgcynbGBM";
+    const firebaseApiKey = getFirebaseApiKey();
 
     try {
       const response = await fetch(
